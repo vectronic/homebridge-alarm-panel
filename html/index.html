@@ -1,0 +1,225 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <meta name="author" content="vectronic">
+        <title>homebridge-alarm-panel</title>
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+
+        <link rel="stylesheet" href="assets/css/main.css">
+
+        <link rel="apple-touch-icon" sizes="57x57" href="/html/assets/favicon/apple-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/html/assets/favicon/apple-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/html/assets/favicon/apple-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/html/assets/favicon/apple-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/html/assets/favicon/apple-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/html/assets/favicon/apple-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/html/assets/favicon/apple-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/html/assets/favicon/apple-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/html/assets/favicon/apple-icon-180x180.png">
+        <link rel="icon" type="image/png" sizes="192x192"  href="/html/assets/favicon/android-icon-192x192.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/html/assets/favicon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="/html/assets/favicon/favicon-96x96.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/html/assets/favicon/favicon-16x16.png">
+        <link rel="manifest" href="/html/assets/favicon/manifest.json">
+        <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml">
+        <meta name="msapplication-TileColor" content="#ffffff">
+        <meta name="msapplication-TileImage" content="/assets/favicon/ms-icon-144x144.png">
+    </head>
+    <body>
+
+        <div class="d-flex flex-column vh-100 d-none fixed-top">
+            <input id="awayToggle" type="checkbox" data-toggle="toggle" data-on="Away" data-off="Home" data-onstyle="info" data-offstyle="default" data-width="100%" data-height="90%">
+            <h1 class="mx-auto">
+                <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
+                <span id="alertingLabel" class="badge badge-pill badge-danger d-none">Alerting</span>
+            </h1>
+        </div>
+        <div class="d-flex flex-column fixed-top">
+            <button id="startButton" type="button" class="btn btn-success vh-100">Start</button>
+        </div>
+
+        <audio id="trippedAudio" src="assets/audio/beep.mp3"></audio>
+
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
+        <script>
+
+            const SWITCH = {
+                AWAY: 'away',
+                TRIPPED: 'tripped',
+                ALERTING: 'alerting'
+            };
+
+            const getStateUrlPrefix = 'http://192.168.35.8:51828/?accessoryId=';
+            const setAwayStateUrlPrefix = `http://192.168.35.8:51828/?accessoryId=${SWITCH.AWAY}&state=`;
+
+            const startButton = document.getElementById('startButton');
+
+            const awayToggle = document.getElementById('awayToggle');
+            const trippedLabel = document.getElementById('trippedLabel');
+            const alertingLabel = document.getElementById('alertingLabel');
+
+            const trippedAudio = document.getElementById('trippedAudio');
+
+            let away = false;
+            let tripped = false;
+            let alerting = false;
+
+            let remoteUpdateInProgress = false;
+
+            function makeRequest(method, url) {
+                return new Promise(function (resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open(method, url);
+                    xhr.onload = function () {
+                        if (this.status >= 200 && this.status < 300) {
+                            resolve(xhr.response);
+                        }
+                        else {
+                            reject({
+                                status: this.status,
+                                statusText: xhr.statusText
+                            });
+                        }
+                    };
+                    xhr.onerror = function () {
+                        reject({
+                            status: this.status,
+                            statusText: xhr.statusText
+                        });
+                    };
+                    xhr.send();
+                });
+            }
+
+
+            function getRemoteState(switchId) {
+                return makeRequest('GET', `${getStateUrlPrefix}${switchId}`).then((response) => {
+                    return {
+                        switchId,
+                        state: JSON.parse(response).state
+                    }
+                });
+
+            }
+
+
+            function setRemoteAwayState(away) {
+                return makeRequest('GET', `${setAwayStateUrlPrefix}${away}`).then((response) => {
+
+                    // Re-enable handling of remote state polling
+                    remoteUpdateInProgress = false;
+                });
+
+            }
+
+
+            function renderLocalStates() {
+                console.log(`renderLocalStates(away=${away}, tripped=${tripped}, alerting=${alerting})`);
+
+                awayToggle.checked = away;
+
+                const awayToggleEvent = new Event('change');
+                awayToggle.dispatchEvent(awayToggleEvent);
+
+                if (away) {
+                    if (alerting) {
+                        trippedLabel.classList.add('d-none');
+                        alertingLabel.classList.remove('d-none');
+                    }
+                    else if (tripped) {
+                        trippedLabel.classList.remove('d-none');
+                        alertingLabel.classList.add('d-none');
+
+                        trippedAudio.play();
+                    }
+                    else {
+                        trippedLabel.classList.add('d-none');
+                        alertingLabel.classList.add('d-none');
+                    }
+                }
+                else {
+                    trippedLabel.classList.add('d-none');
+                    alertingLabel.classList.add('d-none');
+                }
+            }
+
+
+            function pollRemoteStates() {
+
+                Promise.all([
+                    getRemoteState(SWITCH.AWAY),
+                    getRemoteState(SWITCH.TRIPPED),
+                    getRemoteState(SWITCH.ALERTING)
+                ]).then((remoteStates) => {
+
+                    if (!remoteUpdateInProgress) {
+
+                        remoteStates.forEach((remoteState) => {
+                            console.log(remoteState);
+
+                            switch (remoteState.switchId) {
+
+                                case SWITCH.AWAY:
+                                    away = remoteState.state;
+                                    break;
+
+                                case SWITCH.TRIPPED:
+                                    tripped = remoteState.state;
+                                    break;
+
+                                case SWITCH.ALERTING:
+                                    alerting = remoteState.state;
+                                    break;
+                            }
+                        });
+
+                        renderLocalStates();
+                    }
+
+                    setTimeout(function() {
+                        pollRemoteStates();
+                    }, 3000);
+                }).catch((err) => {
+                    console.log(err);
+                });
+            }
+
+
+            awayToggle.onchange = (event) => {
+
+                const localAway = event.target.checked;
+                console.log(`local away: ${localAway}`);
+
+                if (localAway !== away) {
+
+                    // Disable handling of remote state polling
+                    remoteUpdateInProgress = true;
+
+                    // Push the local away change to remote
+                    setRemoteAwayState(localAway);
+                }
+            };
+
+
+            startButton.onclick = () => {
+                trippedAudio.play();
+                trippedAudio.pause();
+
+                startButton.classList.add('d-none');
+                startButton.classList.add('vh-0');
+                startButton.disabled = true;
+            };
+
+            pollRemoteStates();
+
+        </script>
+    </body>
+</html>
