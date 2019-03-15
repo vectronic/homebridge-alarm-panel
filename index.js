@@ -134,9 +134,12 @@ function AlarmPanelPlatform(log, config) {
 
 AlarmPanelPlatform.prototype.accessories = function(callback) {
 
-    this.accessory = new AlarmPanelAccessory(this.log, this);
+    const alarmPanelAccessory = new AlarmPanelAccessory(this.log, this);
 
-    callback([this.accessory]);
+    const accessories = [];
+    accessories.push(alarmPanelAccessory);
+
+    callback(accessories);
 
     const app = express();
 
@@ -160,7 +163,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         const newMode = getArmedModeFromString(JSON.parse(request.body).armedMode);
 
         if (currentMode !== newMode) {
-            that.accessory.changeHandlerArmedMode(newMode);
+            alarmPanelAccessory.changeHandlerArmedMode(newMode);
             currentMode = newMode;
         }
 
@@ -193,19 +196,23 @@ function AlarmPanelAccessory(log, platform) {
     this.log = log;
     this.platform = platform;
 
-    this.service = new Service.AlarmPanel('Alarm Panel');
+    this.alarmPanelService = new Service.AlarmPanel('Alarm Panel');
+    this.accessoryInformationService = new Service.AccessoryInformation();
+
+    this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
+    this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
 
     this.changeHandlerArmedMode = (function(newState) {
         this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
-        this.service.getCharacteristic(Characteristic.ArmedMode)
+        this.alarmPanelService.getCharacteristic(Characteristic.ArmedMode)
             .updateValue(newState, undefined, WEB_UI_CONTEXT);
     }).bind(this);
 
-    this.service.getCharacteristic(Characteristic.ArmedMode)
+    this.alarmPanelService.getCharacteristic(Characteristic.ArmedMode)
         .on('get', this.getArmedMode.bind(this))
         .on('set', this.setArmedMode.bind(this));
 
-    this.service.getCharacteristic(Characteristic.AlarmState)
+    this.alarmPanelService.getCharacteristic(Characteristic.AlarmState)
         .on('get', this.getAlarmState.bind(this))
         .on('set', this.setAlarmState.bind(this));
 }
@@ -248,5 +255,5 @@ AlarmPanelAccessory.prototype.setAlarmState = function(state, callback) {
 
 
 AlarmPanelAccessory.prototype.getServices = function() {
-    return [ this.service ];
+    return [ this.accessoryInformationService, this.alarmPanelService ];
 };
