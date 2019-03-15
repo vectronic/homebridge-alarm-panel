@@ -107,8 +107,8 @@ function getStringFromAlarmState(alarmState) {
  * Service "AlarmPanel"
  */
 
-Service.AlarmPanel = function() {
-    Service.call(this, 'Alarm Panel', '31234567-0000-1000-8000-0026BB765293');
+Service.AlarmPanel = function(displayName, subtype) {
+    Service.call(this, displayName, '31234567-0000-1000-8000-0026BB765293', subtype);
 
     this.addCharacteristic(Characteristic.ArmedMode);
     this.addCharacteristic(Characteristic.AlarmState);
@@ -193,7 +193,7 @@ function AlarmPanelAccessory(log, platform) {
     this.log = log;
     this.platform = platform;
 
-    this.service = new Service.AlarmPanel();
+    this.service = new Service.AlarmPanel('Alarm Panel');
 
     this.changeHandlerArmedMode = (function(newState) {
         this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
