@@ -11,11 +11,6 @@ const hap = require("hap-nodejs");
 const Service = hap.Service;
 const Characteristic = hap.Characteristic;
 
-module.exports = function(homebridge) {
-
-    homebridge.registerPlatform("homebridge-alarm-panel", "AlarmPanel", AlarmPanelPlatform);
-    homebridge.registerAccessory("homebridge-alarm-panel", "AlarmPanelAccessory", AlarmPanelAccessory);
-};
 
 /**
  * Characteristic "ArmedMode"
@@ -134,12 +129,9 @@ function AlarmPanelPlatform(log, config) {
 
 AlarmPanelPlatform.prototype.accessories = function(callback) {
 
-    const alarmPanelAccessory = new AlarmPanelAccessory(this.log, this);
+    this.alarmPanelAccessory = new AlarmPanelAccessory(this.log, this);
 
-    const accessories = [];
-    accessories.push(alarmPanelAccessory);
-
-    callback(accessories);
+    callback( [ this.alarmPanelAccessory ] );
 
     const app = express();
 
@@ -200,10 +192,6 @@ function AlarmPanelAccessory(log, platform) {
     this.name = 'Alarm Panel';
 
     this.alarmPanelService = new Service.AlarmPanel('Alarm Panel');
-    this.accessoryInformationService = new Service.AccessoryInformation();
-
-    this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
-    this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
 
     this.changeHandlerArmedMode = (function(newState) {
         this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
@@ -258,5 +246,12 @@ AlarmPanelAccessory.prototype.setAlarmState = function(state, callback) {
 
 
 AlarmPanelAccessory.prototype.getServices = function() {
-    return [ this.accessoryInformationService, this.alarmPanelService ];
+    return [ this.alarmPanelService ];
+};
+
+
+module.exports = function(homebridge) {
+
+    homebridge.registerPlatform("homebridge-alarm-panel", "AlarmPanel", AlarmPanelPlatform);
+    homebridge.registerAccessory("homebridge-alarm-panel", "AlarmPanelAccessory", AlarmPanelAccessory);
 };
