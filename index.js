@@ -4,12 +4,13 @@ const inherits = require('util').inherits;
 const express = require('express')();
 const storage = require('node-persist');
 
-const Service = homebridge.hap.Service;
-const Characteristic = homebridge.hap.Characteristic;
-
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
 
+const hap = require("hap-nodejs");
+
+const Service = hap.Service;
+const Characteristic = hap.Characteristic;
 
 module.exports = function(homebridge) {
 
