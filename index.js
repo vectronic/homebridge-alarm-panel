@@ -2,7 +2,6 @@
 
 const inherits = require('util').inherits;
 const express = require('express')();
-const storage = require('node-persist');
 
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
@@ -34,7 +33,7 @@ Characteristic.ArmedMode = function() {
     this.value = this.getDefaultValue();
 };
 
-inherits(Characteristic.AlarmMode, Characteristic);
+inherits(Characteristic.ArmedMode, Characteristic);
 
 Characteristic.ArmedMode.UUID = '01234567-0000-1000-8000-0026BB765291';
 
@@ -128,14 +127,14 @@ function AlarmPanelPlatform(log, config) {
 
     this.log = log;
     this.webUiPort = config["web_ui_port"] || 8888;
-    this.storage = storage;
-    this.storage.initSync();
+    this.armedMode = Characteristic.ArmedMode.HOME;
+    this.alarmState = Characteristic.AlarmState.OFF;
 }
 
 
 AlarmPanelPlatform.prototype.accessories = function(callback) {
 
-    this.accessory = new AlarmPanelAccessory(this.log, this.storage);
+    this.accessory = new AlarmPanelAccessory(this.log, this);
 
     callback([this.accessory]);
 
@@ -148,26 +147,17 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
     app.get('/api/armedMode', function(request, response) {
 
-        let currentMode = that.storage.getItemSync('ArmedMode');
-        if (currentMode === undefined) {
-            currentMode = Characteristic.ArmedMode.HOME;
-        }
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify({
-            alarmMode: getStringFromArmedMode(currentMode)
+            armedMode: getStringFromArmedMode(that.armedMode)
         }));
     });
 
     app.post('/api/armedMode', function(request, response) {
 
-        let currentMode = that.storage.getItemSync('ArmedMode');
-        if (currentMode === undefined) {
-            currentMode = Characteristic.ArmedMode.HOME;
-        }
+        let currentMode = that.armedMode;
 
         const newMode = getArmedModeFromString(JSON.parse(request.body).armedMode);
-
-        that.storage.setItemSync(ArmedMode, newMode);
 
         if (currentMode !== newMode) {
             that.accessory.changeHandlerArmedMode(newMode);
@@ -176,19 +166,15 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify({
-            alarmMode: getStringFromArmedMode(currentMode)
+            armedMode: getStringFromArmedMode(currentMode)
         }));
     });
 
     app.get('/api/alarmState', function(request, response) {
 
-        let currentState = that.storage.getItemSync('AlarmState');
-        if (currentState === undefined) {
-            currentState = Characteristic.AlarmState.OFF;
-        }
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify({
-            alarmState: getStringFromAlarmState(currentState)
+            alarmState: getStringFromAlarmState(that.alarmState)
         }));
     });
 
@@ -202,10 +188,10 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
  * Accessory "AlarmPanel"
  */
 
-function AlarmPanelAccessory(log, storage) {
+function AlarmPanelAccessory(log, platform) {
 
     this.log = log;
-    this.storage = storage;
+    this.platform = platform;
 
     this.service = new Service.AlarmPanel();
 
@@ -227,21 +213,17 @@ function AlarmPanelAccessory(log, storage) {
 
 AlarmPanelAccessory.prototype.getArmedMode = function(callback) {
 
-    this.log('Getting current value of ArmedMode');
+    this.log(`Getting current value of ArmedMode: ${this.platform.armedMode}`);
 
-    let mode = this.storage.getItemSync('ArmedMode');
-    if (mode === undefined) {
-        mode = Characteristic.ArmedMode.HOME;
-    }
-    callback(null, mode);
+    callback(null, this.platform.armedMode);
 };
 
 
 AlarmPanelAccessory.prototype.setArmedMode = function(mode, callback) {
 
-    this.log('Setting current value for ArmedMode');
+    this.log(`Setting current value for ArmedMode to: ${mode}`);
 
-    this.storage.setItemSync('ArmedMode', mode);
+    this.platform.armedMode = mode;
 
     callback(null);
 };
@@ -249,21 +231,17 @@ AlarmPanelAccessory.prototype.setArmedMode = function(mode, callback) {
 
 AlarmPanelAccessory.prototype.getAlarmState = function(callback) {
 
-    this.log('Getting current value of AlarmState');
+    this.log(`Getting current value of AlarmState: ${this.platform.alarmState}`);
 
-    let state = this.storage.getItemSync('AlarmState');
-    if (state === undefined) {
-        state = Characteristic.AlarmState.OFF;
-    }
-    callback(null, state);
+    callback(null, this.platform.alarmState);
 };
 
 
 AlarmPanelAccessory.prototype.setAlarmState = function(state, callback) {
 
-    this.log('Setting current value for AlarmState');
+    this.log(`Setting current value for AlarmState to: ${state}`);
 
-    this.storage.setItemSync('AlarmState', state);
+    this.platform.alarmState = state;
 
     callback(null);
 };

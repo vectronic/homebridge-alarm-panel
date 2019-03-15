@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "express": "^4.16.4",
-    "hap-nodejs": "^0.4.48",
-    "node-persist": "^3.0.4"
+    "hap-nodejs": "^0.4.48"
   }
 }
