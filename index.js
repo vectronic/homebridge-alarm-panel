@@ -196,6 +196,9 @@ function AlarmPanelAccessory(log, platform) {
     this.log = log;
     this.platform = platform;
 
+    // the name property is required by Homebridge!
+    this.name = 'Alarm Panel';
+
     this.alarmPanelService = new Service.AlarmPanel('Alarm Panel');
     this.accessoryInformationService = new Service.AccessoryInformation();
 
