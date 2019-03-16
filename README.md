@@ -71,18 +71,17 @@ Defaults to an internally hosted relative URL of `assets/audio/beep.mp3`
 The platform provides one accessory with the following switch services:
 
 * *Away*: This can be manually turned on/off via the Home app or the alarm control panel web UI as you enter or leave the home.
-* *Tripped*: The state can be set manually via the Home app but it is not the intended usage (apart from testing).
-HomeKit automation should be configured to turn this on when entry is detected 
+* *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
+switch being turned on and it is immediately turned off when the *Away* switch is turned off. Note that the accessory
+logic prevents this being set on or off manually.
+* *Tripped*: HomeKit automation should be configured to turn this on when entry is detected 
 (e.g. via an entry detection accessory). Note that the accessory logic ensures that setting the on state 
-ONLY takes effect if the *Armed* switch is on. 
-
-and the following contact sensor services:
-
-* *Armed*: The state is managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
-switch being turned on and it is immediately turned off when the *Away* switch is turned off. 
-* *Alarming*: The state is managed by the plugin: It is turned on after `alarm_delay` seconds subsequent to the *Tripped* 
+ONLY takes effect if the *Armed* switch is on. The state can be set manually on (but not off) via the Home app, 
+however this is not the intended usage (apart from testing). 
+* *Alarming*: This is automatically managed by the plugin: It is turned on after `alarm_delay` seconds subsequent to the *Tripped* 
 switch being turned on and it is immediately turned off when the *Away* switch is turned off. HomeKit automation should be
-configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on. 
+configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on. Note that the accessory
+logic prevents this being set on or off manually. 
 
 ### Usage
  
