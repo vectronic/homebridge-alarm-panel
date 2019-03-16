@@ -94,6 +94,9 @@
                         if (state.away && !state.armed) {
                             armingTone.play();
                         }
+                        else {
+                            armingToneTimeout = null;
+                        }
                     }, armingToneDelay * 1000);
                 }
                 else {
@@ -108,6 +111,9 @@
                         if (state.tripped && !state.alarming) {
                             trippedTone.play();
                         }
+                        else {
+                            trippedToneTimeout = null;
+                        }
                     }, trippedToneDelay * 1000);
                 }
                 else {
@@ -121,6 +127,9 @@
                     alarmingToneTimeout = setTimeout(() => {
                         if (state.alarming) {
                             alarmingTone.play();
+                        }
+                        else {
+                            alarmingToneTimeout = null;
                         }
                     }, alarmingToneDelay * 1000);
                 }
@@ -253,8 +262,6 @@
                 getRemoteState().then((remoteState) => {
 
                     if (!remoteUpdateInProgress) {
-
-                        console.log(remoteState);
 
                         state = remoteState;
 
