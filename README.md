@@ -101,6 +101,8 @@ If the *Alarming* switch is turned on, an audible alert will occur until:
 
 * the Home/Away button is toggled to home causing the *Away* switch to be turned off.
 
+NOTE: If Homebridge is restarted the alarm panel state will reset.
+
 ### HTTP REST API Details
 
 NOTE: This section provides details of the internal design. Knowledge of this is not required to use the plugin.
