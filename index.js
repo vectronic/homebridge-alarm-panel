@@ -201,7 +201,14 @@ AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
 
 
 AlarmPanelAccessory.prototype.setArmed = function(armed, callback, context) {
-    this.log(`Setting current value of Armed to: ${armed} via context: ${context}`);
+    this.log(`Request to set current value of Armed to: ${armed} via context: ${context}`);
+
+    if (context !== TIMEOUT_CONTEXT && context !== LOGIC_CONTEXT) {
+        this.log(`Invalid context for setting armed state, ignoring request to set armed to ${armed}...`);
+        callback('invalid context');
+        return;
+    }
+
     this.armed = armed;
     callback(null);
 };
@@ -261,7 +268,7 @@ AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
 
 
 AlarmPanelAccessory.prototype.setAlarming = function(alarming, callback, context) {
-    this.log(`Setting current value of Alarming to: ${alarming} via context: ${context}`);
+    this.log(`Request to set current value of Alarming to: ${alarming} via context: ${context}`);
 
     if (context !== LOGIC_CONTEXT && context !== LOGIC_CONTEXT) {
         this.log(`Invalid context for setting alarming state, ignoring request to set alarming to ${alarming}...`);
