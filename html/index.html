@@ -34,8 +34,9 @@
         <div class="d-flex flex-column vh-100 d-none fixed-top">
             <input id="awayToggle" type="checkbox" data-toggle="toggle" data-on="Away" data-off="Home" data-onstyle="info" data-offstyle="default" data-width="100%" data-height="90%">
             <h1 class="mx-auto">
+                <span id="armingLabel" class="badge badge-pill badge-info d-none">Arming...</span>
                 <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
-                <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
+                <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped...</span>
                 <span id="alarmingLabel" class="badge badge-pill badge-danger d-none">Alarming</span>
             </h1>
         </div>
@@ -60,6 +61,7 @@
             const connectButton = document.getElementById('connectButton');
 
             const awayToggle = document.getElementById('awayToggle');
+            const armingLabel = document.getElementById('armingLabel');
             const armedLabel = document.getElementById('armedLabel');
             const trippedLabel = document.getElementById('trippedLabel');
             const alarmingLabel = document.getElementById('alarmingLabel');
@@ -249,9 +251,11 @@
                     awayToggle.dispatchEvent(awayToggleEvent);
                 }
                 if (state.away && !state.armed) {
+                    armingLabel.classList.remove('d-none');
                     startArmingTone();
                 }
                 else {
+                    armingLabel.classList.add('d-none');
                     stopArmingTone();
                     stopTrippedTone();
                     stopAlarmingTone();
@@ -259,6 +263,7 @@
 
                 if (state.armed) {
                     armedLabel.classList.remove('d-none');
+                    armingLabel.classList.add('d-none');
                     stopArmingTone();
                 }
                 else {
@@ -276,6 +281,7 @@
 
                 if (state.alarming) {
                     alarmingLabel.classList.remove('d-none');
+                    trippedLabel.classList.add('d-none');
                     stopTrippedTone();
                     startAlarmingTone();
                 }
