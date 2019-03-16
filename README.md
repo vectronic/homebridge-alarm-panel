@@ -52,12 +52,18 @@ The platform provides one accessory with the following switch services:
 * *Away*: This can be manually turned on/off via the Home app or the alarm control panel web UI as you enter or leave the home.
 * *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
 switch being turned on and it is immediately turned off when the *Away* switch is turned off.
-* *Tripped*: HomeKit automation should be configured to turn this on when entry is detected 
-(e.g. via an entry detection accessory). The on state will ONLY take effect if the *Armed* switch is on. 
-The state can be set manually via the Home app but it is not the intended usage.
+
+CAN WE DISABLE USAGE?
+
+* *Tripped*: The state can be set manually via the Home app but it is not the intended usage. 
+HomeKit automation should be configured to turn this on when entry is detected 
+(e.g. via an entry detection accessory). Note that the accessory logic ensures that setting the on state 
+ONLY takes effect if the *Armed* switch is on. 
 * *Alarming*: This is automatically managed by the plugin: It is turned on after `alarm_delay` seconds subsequent to the *Tripped* 
 switch being turned on and it is immediately turned off when the *Away* switch is turned off. HomeKit automation should be
 configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on.
+
+CAN WE DISABLE USAGE?
 
 ### Usage
  
