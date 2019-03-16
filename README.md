@@ -56,7 +56,7 @@ Defaults to 30 seconds.
 * `arming_tone_interval` is the interval in seconds between the arming tone being played in the web UI. 
 Defaults to 3 seconds.
 * `tripped_tone_interval` is the interval in seconds between the tripped tone being played in the web UI. 
-Defaults to 2 seconds.
+Defaults to 1 seconds.
 * `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI. 
 Defaults to 1 seconds.
 * `arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
@@ -86,7 +86,7 @@ logic prevents this being set on or off manually.
 ### Usage
  
 1. Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
-1. Tap on the "Connect" button to initiate connection between the web UI and the Homebridge accessory.
+1. Tap on the "Connect" button (this is required to provide permission to the browser for programmatic control of the web audio playback).
 1. Tap on the "Home/Away" toggle button as you enter or leave the house.
 
 When the Home/Away button is toggled to away, the *Away* switch will be turned on. An audible alert will occur
@@ -147,7 +147,7 @@ This will return a response with content type `application/json` with the body c
 
     {
         "arming_tone_interval": 3,
-        "tripped_tone_interval": 2,
+        "tripped_tone_interval": 1,
         "alarming_tone_interval": 1,
         "arming_tone_mp3_url": "assets/audio/buzz.mp3",
         "tripped_tone_mp3_url": "assets/audio/buzz.mp3",

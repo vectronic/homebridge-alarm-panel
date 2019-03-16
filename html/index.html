@@ -69,7 +69,7 @@
             const alarmingTone = document.getElementById('alarmingTone');
 
             let armingToneDelay = 3;
-            let trippedToneDelay = 2;
+            let trippedToneDelay = 1;
             let alarmingToneDelay = 1;
 
             let armingToneTimeout = null;
@@ -96,7 +96,7 @@
 
 
             trippedTone.onended = () => {
-                if (state.tripped === true) {
+                if (state.tripped && !state.alarming) {
                     trippedToneTimeout = setTimeout(() => {
                         trippedTone.play();
                     }, trippedToneDelay * 1000);
@@ -105,7 +105,7 @@
 
 
             alarmingTone.onended = () => {
-                if (state.alarming === true) {
+                if (state.alarming) {
                     alarmingToneTimeout = setTimeout(() => {
                         alarmingTone.play();
                     }, alarmingToneDelay * 1000);
@@ -276,6 +276,7 @@
 
                 if (state.alarming) {
                     alarmingLabel.classList.remove('d-none');
+                    stopTrippedTone();
                     startAlarmingTone();
                 }
                 else {
@@ -324,34 +325,34 @@
 
 
             connectButton.onclick = () => {
-                getConfig().then((config) => {
 
-                    armingTone.src = config.arming_tone_mp3_url;
-                    trippedTone.src = config.tripped_tone_mp3_url;
-                    alarmingTone.src = config.alarming_tone_mp3_url;
+                // Starting playback via a user click event is required to unlock the browser security preventing programmatic playback later
+                armingTone.play();
+                armingTone.pause();
+                trippedTone.play();
+                trippedTone.pause();
+                alarmingTone.play();
+                alarmingTone.pause();
 
-                    armingToneDelay = config.arming_tone_interval;
-                    trippedToneDelay = config.tripped_tone_interval;
-                    alarmingToneDelay = config.alarming_tone_interval;
+                connectButton.classList.add('d-none');
+                connectButton.classList.add('vh-0');
+                connectButton.disabled = true;
 
-                    // Starting playback via a user click event is required to unlock the browser security preventing scripted playback later
-                    armingTone.play();
-                    armingTone.pause();
-                    trippedTone.play();
-                    trippedTone.pause();
-                    alarmingTone.play();
-                    alarmingTone.pause();
-
-                    connectButton.classList.add('d-none');
-                    connectButton.classList.add('vh-0');
-                    connectButton.disabled = true;
-
-                    pollRemoteState();
-
-                }).catch((err) => {
-                    console.log(err);
-                });
+                pollRemoteState();
             };
+
+            getConfig().then((config) => {
+                armingTone.src = config.arming_tone_mp3_url;
+                trippedTone.src = config.tripped_tone_mp3_url;
+                alarmingTone.src = config.alarming_tone_mp3_url;
+
+                armingToneDelay = config.arming_tone_interval;
+                trippedToneDelay = config.tripped_tone_interval;
+                alarmingToneDelay = config.alarming_tone_interval;
+            })
+            .catch((err) => {
+                console.log(err);
+            });
 
         </script>
     </body>
