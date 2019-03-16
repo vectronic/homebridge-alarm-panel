@@ -217,6 +217,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback) {
 
     if (tripped && !this.armed) {
         this.log('State is not armed, ignoring request to set tripped to true...');
+        callback('invalid state');
         return;
     }
     this.tripped = tripped;
