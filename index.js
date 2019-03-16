@@ -38,31 +38,28 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
     const jsonParser = bodyParser.json();
 
-    const that = this;
-
-    app.get('/api/state', function(request, response) {
+    app.get('/api/state', (function(request, response) {
 
         response.writeHead(200, JSON_CONTENT);
-        response.end(JSON.stringify(that.alarmPanelAccessory.getState()));
-    });
+        response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
+    }).bind(this));
 
-    app.post('/api/state', jsonParser, function(request, response) {
+    app.post('/api/state', jsonParser, (function(request, response) {
 
-        let currentAwayState = that.alarmPanelAccessory.away;
+        let currentAwayState = this.alarmPanelAccessory.away;
 
         const newAwayState = request.body.away;
-        that.log(`currentAwayState: ${currentAwayState} => newAwayState: ${newAwayState}`);
+        this.log(`currentAwayState: ${currentAwayState} => newAwayState: ${newAwayState}`);
 
         if (currentAwayState !== newAwayState) {
-            // that.alarmPanelAccessory.away = newAwayState;
-            that.alarmPanelAccessory.awayService
+            this.alarmPanelAccessory.awayService
                 .getCharacteristic(Characteristic.On)
                 .setValue(newAwayState, undefined, WEB_UI_CONTEXT);
         }
 
         response.writeHead(200, JSON_CONTENT);
-        response.end(JSON.stringify(that.alarmPanelAccessory.getState()));
-    });
+        response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
+    }).bind(this));
 
     app.listen(this.webUiPort);
 
@@ -77,7 +74,6 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 function AlarmPanelAccessory(log, config) {
 
     this.log = log;
-    this.config = config;
 
     this.name = config.name || 'Alarm Panel';
 
@@ -150,23 +146,23 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
 
     if (away) {
 
-        const that = this;
         // Set timeout to transition to armed
-        this.armedTimeout = setTimeout(() => {
-            that.log('Armed timeout expired!');
+        this.armedTimeout = setTimeout((function() {
+            this.log('Armed timeout expired!');
 
             // prevent race condition
-            if (!that.away) {
-                that.log('Ignoring Armed Timeout as Away is false!');
+            if (!this.away) {
+                this.log('Ignoring Armed Timeout as Away is false!');
             }
             else {
-                that.armed = true;
-                that.armedService
+                // this.armed = true;
+                this.armedService
                     .getCharacteristic(Characteristic.On)
                     .setValue(true, undefined, TIMEOUT_CONTEXT);
             }
-        }, this.armDelay * 1000);
-        this.armedTimeout.unref();
+        }).bind(this), this.armDelay * 1000);
+
+        // this.armedTimeout.unref();
         this.log('Armed timeout set...');
     }
     else {
@@ -203,7 +199,7 @@ AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
 AlarmPanelAccessory.prototype.setArmed = function(armed, callback, context) {
     this.log(`Request to set current value of Armed to: ${armed} via context: ${context}`);
 
-    if (context !== TIMEOUT_CONTEXT && context !== LOGIC_CONTEXT) {
+    if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
         this.log(`Invalid context for setting armed state, ignoring request to set armed to ${armed}...`);
         callback('invalid context');
         return;
@@ -238,23 +234,22 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
 
     if (tripped) {
 
-        const that = this;
         // Set timeout to transition to alarming
-        this.alarmingTimeout = setTimeout(() => {
-            that.log('Alarming timeout expired!');
+        this.alarmingTimeout = setTimeout((function() {
+            this.log('Alarming timeout expired!');
 
             // prevent race condition
-            if (!that.away) {
-                that.log('Ignoring Alarming Timeout as Away is false!');
-            }
-            else {
-                that.alarming = true;
-                that.alarmingService
+            if (!this.away) {
+                this.log('Ignoring Alarming Timeout as Away is false!');
+            } else {
+                // this.alarming = true;
+                this.alarmingService
                     .getCharacteristic(Characteristic.On)
                     .setValue(true, undefined, TIMEOUT_CONTEXT);
             }
-        }, this.alarmDelay * 1000);
-        this.alarmingTimeout.unref();
+        }).bind(this), this.alarmDelay * 1000);
+
+        // this.alarmingTimeout.unref();
         this.log('Alarming timeout set...');
     }
     callback(null);
@@ -270,7 +265,7 @@ AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
 AlarmPanelAccessory.prototype.setAlarming = function(alarming, callback, context) {
     this.log(`Request to set current value of Alarming to: ${alarming} via context: ${context}`);
 
-    if (context !== LOGIC_CONTEXT && context !== LOGIC_CONTEXT) {
+    if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
         this.log(`Invalid context for setting alarming state, ignoring request to set alarming to ${alarming}...`);
         callback('invalid context');
         return;

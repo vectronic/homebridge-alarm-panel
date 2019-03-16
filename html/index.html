@@ -34,15 +34,16 @@
         <div class="d-flex flex-column vh-100 d-none fixed-top">
             <input id="awayToggle" type="checkbox" data-toggle="toggle" data-on="Away" data-off="Home" data-onstyle="info" data-offstyle="default" data-width="100%" data-height="90%">
             <h1 class="mx-auto">
+                <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
                 <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
                 <span id="alertingLabel" class="badge badge-pill badge-danger d-none">Alerting</span>
             </h1>
         </div>
-        <div class="d-flex flex-column fixed-top">
-            <button id="startButton" type="button" class="btn btn-success vh-100">Start</button>
-        </div>
+        <!--<div class="d-flex flex-column fixed-top">-->
+            <!--<button id="startButton" type="button" class="btn btn-success vh-100">Start</button>-->
+        <!--</div>-->
 
-        <audio id="trippedAudio" src="assets/audio/beep.mp3"></audio>
+        <!--<audio id="trippedAudio" src="assets/audio/beep.mp3"></audio>-->
 
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -51,26 +52,25 @@
 
         <script>
 
-            const SWITCH = {
-                AWAY: 'away',
-                TRIPPED: 'tripped',
-                ALERTING: 'alerting'
-            };
+            const stateUrl = 'http://192.168.35.8:8888/api/state';
 
-            const getStateUrlPrefix = 'http://192.168.35.8:51828/?accessoryId=';
-            const setAwayStateUrlPrefix = `http://192.168.35.8:51828/?accessoryId=${SWITCH.AWAY}&state=`;
-
-            const startButton = document.getElementById('startButton');
+            // const startButton = document.getElementById('startButton');
 
             const awayToggle = document.getElementById('awayToggle');
+            const armedLabel = document.getElementById('armedLabel');
             const trippedLabel = document.getElementById('trippedLabel');
             const alertingLabel = document.getElementById('alertingLabel');
 
-            const trippedAudio = document.getElementById('trippedAudio');
+            // const trippedAudio = document.getElementById('trippedAudio');
 
-            let away = false;
-            let tripped = false;
-            let alerting = false;
+            // let away = false;
+            // let tripped = false;
+            let state = {
+                away: false,
+                armed: false,
+                tripped: false,
+                alarming: false
+            };
 
             let remoteUpdateInProgress = false;
 
@@ -100,92 +100,67 @@
             }
 
 
-            function getRemoteState(switchId) {
-                return makeRequest('GET', `${getStateUrlPrefix}${switchId}`).then((response) => {
-                    return {
-                        switchId,
-                        state: JSON.parse(response).state
-                    }
+            function getRemoteState() {
+                return makeRequest('GET', stateUrl).then((response) => {
+                    return JSON.parse(response);
                 });
-
             }
 
 
-            function setRemoteAwayState(away) {
-                return makeRequest('GET', `${setAwayStateUrlPrefix}${away}`).then((response) => {
+            // function setRemoteAwayState(away) {
+            //     return makeRequest('GET', `${setAwayStateUrlPrefix}${away}`).then((response) => {
+            //
+            //         // Re-enable handling of remote state polling
+            //         remoteUpdateInProgress = false;
+            //     });
+            //
+            // }
 
-                    // Re-enable handling of remote state polling
-                    remoteUpdateInProgress = false;
-                });
 
-            }
+            function renderLocalState() {
+                console.log('renderLocalState');
 
-
-            function renderLocalStates() {
-                console.log(`renderLocalStates(away=${away}, tripped=${tripped}, alerting=${alerting})`);
-
-                awayToggle.checked = away;
+                awayToggle.checked = state.away;
 
                 const awayToggleEvent = new Event('change');
                 awayToggle.dispatchEvent(awayToggleEvent);
 
-                if (away) {
-                    if (alerting) {
-                        trippedLabel.classList.add('d-none');
-                        alertingLabel.classList.remove('d-none');
-                    }
-                    else if (tripped) {
-                        trippedLabel.classList.remove('d-none');
-                        alertingLabel.classList.add('d-none');
-
-                        trippedAudio.play();
-                    }
-                    else {
-                        trippedLabel.classList.add('d-none');
-                        alertingLabel.classList.add('d-none');
-                    }
+                if (state.armed) {
+                    armedLabel.classList.remove('d-none');
+                }
+                else {
+                    armedLabel.classList.add('d-none');
+                }
+                if (state.tripped) {
+                    trippedLabel.classList.remove('d-none');
                 }
                 else {
                     trippedLabel.classList.add('d-none');
+                }
+                if (state.alarming) {
+                    alertingLabel.classList.remove('d-none');
+                }
+                else {
                     alertingLabel.classList.add('d-none');
                 }
             }
 
 
-            function pollRemoteStates() {
+            function pollRemoteState() {
 
-                Promise.all([
-                    getRemoteState(SWITCH.AWAY),
-                    getRemoteState(SWITCH.TRIPPED),
-                    getRemoteState(SWITCH.ALERTING)
-                ]).then((remoteStates) => {
+                getRemoteState().then((remoteState) => {
 
                     if (!remoteUpdateInProgress) {
 
-                        remoteStates.forEach((remoteState) => {
-                            console.log(remoteState);
+                        console.log(remoteState);
 
-                            switch (remoteState.switchId) {
+                        state = remoteState;
 
-                                case SWITCH.AWAY:
-                                    away = remoteState.state;
-                                    break;
-
-                                case SWITCH.TRIPPED:
-                                    tripped = remoteState.state;
-                                    break;
-
-                                case SWITCH.ALERTING:
-                                    alerting = remoteState.state;
-                                    break;
-                            }
-                        });
-
-                        renderLocalStates();
+                        renderLocalState();
                     }
 
                     setTimeout(function() {
-                        pollRemoteStates();
+                        pollRemoteState();
                     }, 3000);
                 }).catch((err) => {
                     console.log(err);
@@ -193,32 +168,32 @@
             }
 
 
-            awayToggle.onchange = (event) => {
+            // awayToggle.onchange = (event) => {
+            //
+            //     const localAway = event.target.checked;
+            //     console.log(`local away: ${localAway}`);
+            //
+            //     if (localAway !== away) {
+            //
+            //         // Disable handling of remote state polling
+            //         remoteUpdateInProgress = true;
+            //
+            //         // Push the local away change to remote
+            //         setRemoteAwayState(localAway);
+            //     }
+            // };
 
-                const localAway = event.target.checked;
-                console.log(`local away: ${localAway}`);
 
-                if (localAway !== away) {
+            // startButton.onclick = () => {
+            //     trippedAudio.play();
+            //     trippedAudio.pause();
+            //
+            //     startButton.classList.add('d-none');
+            //     startButton.classList.add('vh-0');
+            //     startButton.disabled = true;
+            // };
 
-                    // Disable handling of remote state polling
-                    remoteUpdateInProgress = true;
-
-                    // Push the local away change to remote
-                    setRemoteAwayState(localAway);
-                }
-            };
-
-
-            startButton.onclick = () => {
-                trippedAudio.play();
-                trippedAudio.pause();
-
-                startButton.classList.add('d-none');
-                startButton.classList.add('vh-0');
-                startButton.disabled = true;
-            };
-
-            pollRemoteStates();
+            pollRemoteState();
 
         </script>
     </body>

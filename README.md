@@ -53,7 +53,7 @@ The platform provides one accessory with the following switch services:
 * *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
 switch being turned on and it is immediately turned off when the *Away* switch is turned off. Note that the accessory
 logic prevents this being set on or off manually.
-* *Tripped*: The state can be set manually via the Home app but it is not the intended usage. 
+* *Tripped*: The state can be set manually via the Home app but it is not the intended usage (apart from testing).
 HomeKit automation should be configured to turn this on when entry is detected 
 (e.g. via an entry detection accessory). Note that the accessory logic ensures that setting the on state 
 ONLY takes effect if the *Armed* switch is on. 
