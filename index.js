@@ -49,7 +49,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         // let currentAwayState = that.alarmPanelAccessory.away;
 
         const newAwayState = request.body.away;
-        this.log(`newAwayState: ${newAwayState}`);
+        that.log(`newAwayState: ${newAwayState}`);
 
         // if (currentAwayState !== newAwayState) {
         //     that.alarmPanelAccessory.changeHandlerAway(newAwayState);
@@ -79,28 +79,34 @@ function AlarmPanelAccessory(log, config) {
     this.armDelay = config.arm_delay;
     this.alarmDelay = config.alarm_delay;
 
-    // this.away = false;
-    // this.armed = false;
-    // this.tripped = false;
-    // this.alarming = false;
+    this.away = false;
+    this.armed = false;
+    this.tripped = false;
+    this.alarming = false;
+
+    this.awayService = new Service.Switch('Away', 'away');
+    this.awayService.getCharacteristic(Characteristic.On)
+        .on('get', this.getAway.bind(this))
+        .on('set', this.setAway.bind(this));
+
+    this.armedService = new Service.Switch('Armed', 'armed');
+    this.armedService.getCharacteristic(Characteristic.On)
+        .on('get', this.getArmed.bind(this))
+        .on('set', this.setArmed.bind(this));
+
+    this.trippedService = new Service.Switch('Tripped', 'tripped');
+    this.trippedService.getCharacteristic(Characteristic.On)
+        .on('get', this.getTripped.bind(this))
+        .on('set', this.setTripped.bind(this));
+
+    this.alarmingService = new Service.Switch('Alarming', 'alarming');
+    this.alarmingService.getCharacteristic(Characteristic.On)
+        .on('get', this.getAlarming.bind(this))
+        .on('set', this.setAlarming.bind(this));
 
     this.accessoryInformationService = new Service.AccessoryInformation();
     this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
     this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
-
-    this.awayService = new Service.Switch('Away', 'away');
-    // this.awayService.getCharacteristic(Characteristic.On)
-    //     .on('set', this.setAwayOn.bind(this));
-    this.awayService.setCharacteristic(Characteristic.On, false);
-
-    this.armedService = new Service.Switch('Armed', 'armed');
-    this.armedService.setCharacteristic(Characteristic.On, false);
-
-    this.trippedService = new Service.Switch('Tripped', 'tripped');
-    this.trippedService.setCharacteristic(Characteristic.On, false);
-
-    this.alarmingService = new Service.Switch('Alarming', 'alarming');
-    this.alarmingService.setCharacteristic(Characteristic.On, false);
 
     // this.changeHandlerArmedMode = (function(newState) {
     //     this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
@@ -120,43 +126,69 @@ function AlarmPanelAccessory(log, config) {
 
 AlarmPanelAccessory.prototype.getState = function() {
 
-    this.log('Getting current accessory state');
-
-    return {
-        away: this.awayService.getCharacteristic(Characteristic.On).getValue(),
-        armed: this.armedService.getCharacteristic(Characteristic.On).getValue(),
-        tripped: this.trippedService.getCharacteristic(Characteristic.On).getValue(),
-        alarming: this.alarmingService.getCharacteristic(Characteristic.On).getValue()
+    const state = {
+        away: this.away,
+        armed: this.armed,
+        tripped: this.tripped,
+        alarming: this.alarming
     };
+
+    this.log(`Getting current accessory state: ${JSON.stringify(state)}`);
+
+    return state;
 };
 
 
-// AlarmPanelAccessory.prototype.setArmedMode = function(mode, callback) {
-//
-//     this.log(`Setting current value for ArmedMode to: ${mode}`);
-//
-//     this.platform.armedMode = mode;
-//
-//     callback(null);
-// };
-//
+AlarmPanelAccessory.prototype.getAway = function(callback) {
+    this.log(`Getting current value of Away: ${this.away}`);
+    callback(null, this.away);
+};
 
-// AlarmPanelAccessory.prototype.getAlarmState = function(callback) {
-//
-//     this.log(`Getting current value of AlarmState: ${this.platform.alarmState}`);
-//
-//     callback(null, this.platform.alarmState);
-// };
-//
-//
-// AlarmPanelAccessory.prototype.setAlarmState = function(state, callback) {
-//
-//     this.log(`Setting current value for AlarmState to: ${state}`);
-//
-//     this.platform.alarmState = state;
-//
-//     callback(null);
-// };
+
+AlarmPanelAccessory.prototype.setAway = function(away, callback) {
+    this.log(`Setting current value of Away to: ${away}`);
+    this.away = away;
+    callback(null);
+};
+
+
+AlarmPanelAccessory.prototype.getArmed = function(callback) {
+    this.log(`Getting current value of Armed: ${this.armed}`);
+    callback(null, this.armed);
+};
+
+
+AlarmPanelAccessory.prototype.setArmed = function(armed, callback) {
+    this.log(`Setting current value of Armed to: ${armed}`);
+    this.armed = armed;
+    callback(null);
+};
+
+
+AlarmPanelAccessory.prototype.getTripped = function(callback) {
+    this.log(`Getting current value of Tripped: ${this.tripped}`);
+    callback(null, this.tripped);
+};
+
+
+AlarmPanelAccessory.prototype.setTripped = function(tripped, callback) {
+    this.log(`Setting current value of Tripped to: ${tripped}`);
+    this.tripped = tripped;
+    callback(null);
+};
+
+
+AlarmPanelAccessory.prototype.getAlarming = function(callback) {
+    this.log(`Getting current value of Alarming: ${this.alarming}`);
+    callback(null, this.alarming);
+};
+
+
+AlarmPanelAccessory.prototype.setAlarming = function(alarming, callback) {
+    this.log(`Setting current value of Alarming to: ${alarming}`);
+    this.alarming = alarming;
+    callback(null);
+};
 
 
 AlarmPanelAccessory.prototype.getServices = function() {
