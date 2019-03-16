@@ -1,6 +1,8 @@
 'use strict';
 
 const express = require('express');
+const bodyParser = require('body-parser');
+const serveStatic = require('serve-static');
 
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
@@ -29,8 +31,9 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
     const app = express();
 
-    app.use(express.bodyParser());
-    app.use(express.static('html'));
+    app.use(serveStatic('html'));
+
+    const jsonParser = bodyParser.json();
 
     const that = this;
 
@@ -45,12 +48,13 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         }));
     });
 
-    app.post('/api/state', function(request, response) {
+    app.post('/api/state', jsonParser, function(request, response) {
 
         // let currentAwayState = that.alarmPanelAccessory.away;
-        //
-        // const newAwayState = JSON.parse(request.body).away;
-        //
+
+        const newAwayState = request.body.away;
+        this.log(`newAwayState: ${newAwayState}`);
+
         // if (currentAwayState !== newAwayState) {
         //     that.alarmPanelAccessory.changeHandlerAway(newAwayState);
         // }
