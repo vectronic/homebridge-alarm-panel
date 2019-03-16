@@ -96,15 +96,15 @@ function AlarmPanelAccessory(log, config) {
     this.accessoryInformationService
         .setCharacteristic(Characteristic.Model, "Alarm Panel");
 
-    this.awayService = new Service.Switch('Away');
+    this.awayService = new Service.Switch('Away', 'away');
 
     // this.awayService.getCharacteristic(Characteristic.On)
     //     .on('set', this.setAwayOn.bind(this));
     // this.awayService.setCharacteristic(Characteristic.On, this.away);
 
-    this.armedService = new Service.Switch('Armed');
-    this.trippedService = new Service.Switch('Tripped');
-    this.alarmingService = new Service.Switch('Alarming');
+    this.armedService = new Service.Switch('Armed', 'armed');
+    this.trippedService = new Service.Switch('Tripped', 'tripped');
+    this.alarmingService = new Service.Switch('Alarming', 'alarming');
 
     // this.changeHandlerArmedMode = (function(newState) {
     //     this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
