@@ -52,7 +52,9 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         that.log(`newAwayState: ${newAwayState}`);
 
         if (currentAwayState !== newAwayState) {
-            that.alarmPanelAccessory.changeHandlerAway(newAwayState);
+            that.alarmPanelAccessory.away = newAwayState;
+            that.alarmPanelAccessory.awayService.getCharacteristic(Characteristic.On)
+                .updateValue(newAwayState, undefined, WEB_UI_CONTEXT);
         }
 
         response.writeHead(200, JSON_CONTENT);
@@ -107,12 +109,6 @@ function AlarmPanelAccessory(log, config) {
     this.accessoryInformationService = new Service.AccessoryInformation();
     this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
     this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
-
-    this.changeHandlerAway= (function(newState) {
-        this.log("Change HomeKit state for Away to '%s'.", newState);
-        this.awayService.getCharacteristic(Characteristic.On)
-            .updateValue(newState, undefined, WEB_UI_CONTEXT);
-    }).bind(this);
 }
 
 
@@ -126,7 +122,6 @@ AlarmPanelAccessory.prototype.getState = function() {
     };
 
     this.log(`Getting current accessory state: ${JSON.stringify(state)}`);
-
     return state;
 };
 
