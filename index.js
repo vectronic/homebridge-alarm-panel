@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const serveStatic = require('serve-static');
@@ -31,7 +32,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
     const app = express();
 
-    app.use(serveStatic('html'));
+    app.use(serveStatic(path.join(__dirname, 'html')));
 
     const jsonParser = bodyParser.json();
 
@@ -40,12 +41,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
     app.get('/api/state', function(request, response) {
 
         response.writeHead(200, JSON_CONTENT);
-        response.end(JSON.stringify({
-            // away: that.alarmPanelAccessory.away,
-            // armed: that.alarmPanelAccessory.armed,
-            // tripped: that.alarmPanelAccessory.tripped,
-            // alarming: that.alarmPanelAccessory.alarming
-        }));
+        response.end(JSON.stringify(that.alarmPanelAccessory.getState()));
     });
 
     app.post('/api/state', jsonParser, function(request, response) {
@@ -60,12 +56,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         // }
 
         response.writeHead(200, JSON_CONTENT);
-        response.end(JSON.stringify({
-            // away: that.alarmPanelAccessory.away,
-            // armed: that.alarmPanelAccessory.armed,
-            // tripped: that.alarmPanelAccessory.tripped,
-            // alarming: that.alarmPanelAccessory.alarming
-        }));
+        response.end(JSON.stringify(that.alarmPanelAccessory.getState()));
     });
 
     app.listen(this.webUiPort);
@@ -94,21 +85,22 @@ function AlarmPanelAccessory(log, config) {
     // this.alarming = false;
 
     this.accessoryInformationService = new Service.AccessoryInformation();
-
-    this.accessoryInformationService
-        .setCharacteristic(Characteristic.Manufacturer, "vectronic");
-    this.accessoryInformationService
-        .setCharacteristic(Characteristic.Model, "Alarm Panel");
+    this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
+    this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
 
     this.awayService = new Service.Switch('Away', 'away');
-
     // this.awayService.getCharacteristic(Characteristic.On)
     //     .on('set', this.setAwayOn.bind(this));
-    // this.awayService.setCharacteristic(Characteristic.On, this.away);
+    this.awayService.setCharacteristic(Characteristic.On, false);
 
     this.armedService = new Service.Switch('Armed', 'armed');
+    this.armedService.setCharacteristic(Characteristic.On, false);
+
     this.trippedService = new Service.Switch('Tripped', 'tripped');
+    this.trippedService.setCharacteristic(Characteristic.On, false);
+
     this.alarmingService = new Service.Switch('Alarming', 'alarming');
+    this.alarmingService.setCharacteristic(Characteristic.On, false);
 
     // this.changeHandlerArmedMode = (function(newState) {
     //     this.log("Change HomeKit state for ArmedMode to '%s'.", newState);
@@ -125,15 +117,20 @@ function AlarmPanelAccessory(log, config) {
     //     .on('set', this.setAlarmState.bind(this));
 }
 
-//
-// AlarmPanelAccessory.prototype.getArmedMode = function(callback) {
-//
-//     this.log(`Getting current value of ArmedMode: ${this.platform.armedMode}`);
-//
-//     callback(null, this.platform.armedMode);
-// };
-//
-//
+
+AlarmPanelAccessory.prototype.getState = function() {
+
+    this.log('Getting current accessory state');
+
+    return {
+        away: this.awayService.getCharacteristic(Characteristic.On).getValue(),
+        armed: this.armedService.getCharacteristic(Characteristic.On).getValue(),
+        tripped: this.trippedService.getCharacteristic(Characteristic.On).getValue(),
+        alarming: this.alarmingService.getCharacteristic(Characteristic.On).getValue()
+    };
+};
+
+
 // AlarmPanelAccessory.prototype.setArmedMode = function(mode, callback) {
 //
 //     this.log(`Setting current value for ArmedMode to: ${mode}`);
@@ -181,108 +178,5 @@ module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
 
-    // /**
-    //  * Characteristic "ArmedMode"
-    //  */
-    //
-    // Characteristic.ArmedMode = function() {
-    //     Characteristic.call(this, 'Armed Mode', '01234567-0000-1000-8000-0026BB765291');
-    //     this.setProps({
-    //         format: Characteristic.Formats.UINT8,
-    //         maxValue: 1,
-    //         minValue: 0,
-    //         validValues: [0, 1],
-    //         perms: [Characteristic.Perms.READ, Characteristic.Perms.WRITE, Characteristic.Perms.NOTIFY]
-    //     });
-    //     this.value = this.getDefaultValue();
-    // };
-    //
-    // inherits(Characteristic.ArmedMode, Characteristic);
-    //
-    // Characteristic.ArmedMode.UUID = '01234567-0000-1000-8000-0026BB765291';
-    //
-    // Characteristic.ArmedMode.HOME = 0;
-    // Characteristic.ArmedMode.AWAY = 1;
-    //
-    //
-    // Characteristic.ArmedMode.getArmedModeFromString = function(armedModeString) {
-    //
-    //     if (armedModeString === 'AWAY') {
-    //         return Characteristic.ArmedMode.AWAY;
-    //     }
-    //     return Characteristic.ArmedMode.HOME;
-    // };
-    //
-    //
-    // Characteristic.ArmedMode.getStringFromArmedMode = function(armedMode) {
-    //
-    //     if (armedMode === Characteristic.ArmedMode.AWAY) {
-    //         return 'AWAY';
-    //     }
-    //     return 'HOME';
-    // };
-    //
-    //
-    // /**
-    //  * Characteristic "AlarmState"
-    //  */
-    //
-    // Characteristic.AlarmState = function() {
-    //     Characteristic.call(this, 'Alarm State', '81234567-0000-1000-8000-0026BB7652988');
-    //     this.setProps({
-    //         format: Characteristic.Formats.UINT8,
-    //         maxValue: 4,
-    //         minValue: 0,
-    //         validValues: [0, 1, 2, 3, 4],
-    //         perms: [Characteristic.Perms.READ, Characteristic.Perms.WRITE, Characteristic.Perms.NOTIFY]
-    //     });
-    //     this.value = this.getDefaultValue();
-    // };
-    //
-    // inherits(Characteristic.AlarmState, Characteristic);
-    //
-    // Characteristic.AlarmState.UUID = '81234567-0000-1000-8000-0026BB765298';
-    //
-    // Characteristic.AlarmState.OFF = 0;
-    // Characteristic.AlarmState.ARMING = 1;
-    // Characteristic.AlarmState.ARMED = 2;
-    // Characteristic.AlarmState.TRIPPED = 3;
-    // Characteristic.AlarmState.ALARMING = 4;
-    //
-    //
-    // Characteristic.AlarmState.getStringFromAlarmState = function(alarmState) {
-    //
-    //     switch (alarmState) {
-    //         case Characteristic.AlarmState.ALARMING:
-    //             return 'ALARMING';
-    //         case Characteristic.AlarmState.TRIPPED:
-    //             return 'TRIPPED';
-    //         case Characteristic.AlarmState.ARMED:
-    //             return 'ARMED';
-    //         case Characteristic.AlarmState.ARMING:
-    //             return 'ARMING';
-    //         default:
-    //             return 'OFF';
-    //     }
-    // };
-    //
-    //
-    // /**
-    //  * Service "AlarmPanel"
-    //  */
-    //
-    // Service.AlarmPanel = function(displayName, subtype) {
-    //     Service.call(this, displayName, '31234567-0000-1000-8000-0026BB765293', subtype);
-    //
-    //
-    //     this.addCharacteristic(Characteristic.ArmedMode);
-    //     this.addCharacteristic(Characteristic.AlarmState);
-    // };
-    //
-    // inherits(Service.AlarmPanel, Service);
-    //
-    // Service.AlarmPanel.UUID = '31234567-0000-1000-8000-0026BB765293';
-
     homebridge.registerPlatform("homebridge-alarm-panel", "AlarmPanel", AlarmPanelPlatform);
-    // homebridge.registerAccessory("homebridge-alarm-panel", "AlarmPanelAccessory", AlarmPanelAccessory);
 };
