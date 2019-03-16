@@ -1,6 +1,6 @@
 'use strict';
 
-const express = require('express')();
+const express = require('express');
 
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
