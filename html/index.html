@@ -54,8 +54,8 @@
 
         <script>
 
-            const stateUrl = 'http://192.168.35.8:8888/api/state';
-            const configUrl = 'http://192.168.35.8:8888/api/config';
+            const stateUrl = 'api/state';
+            const configUrl = 'api/config';
 
             const connectButton = document.getElementById('connectButton');
 
@@ -326,9 +326,9 @@
             connectButton.onclick = () => {
                 getConfig().then((config) => {
 
-                    // armingTone.src = config.arming_tone_mp3_url;
-                    // trippedTone.src = config.tripped_tone_mp3_url;
-                    // alarmingTone.src = config.alarming_tone_mp3_url;
+                    armingTone.src = config.arming_tone_mp3_url;
+                    trippedTone.src = config.tripped_tone_mp3_url;
+                    alarmingTone.src = config.alarming_tone_mp3_url;
 
                     armingToneDelay = config.arming_tone_interval;
                     trippedToneDelay = config.tripped_tone_interval;
