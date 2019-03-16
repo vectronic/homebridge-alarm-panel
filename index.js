@@ -118,8 +118,8 @@ function AlarmPanelAccessory(log, config) {
         .on('get', this.getAway.bind(this))
         .on('set', this.setAway.bind(this));
 
-    this.armedService = new Service.Switch('Armed', 'armed');
-    this.armedService.getCharacteristic(Characteristic.On)
+    this.armedService = new Service.ContactSensor('Armed', 'armed');
+    this.armedService.getCharacteristic(Characteristic.ContactSensorState)
         .on('get', this.getArmed.bind(this))
         .on('set', this.setArmed.bind(this));
 
@@ -128,8 +128,8 @@ function AlarmPanelAccessory(log, config) {
         .on('get', this.getTripped.bind(this))
         .on('set', this.setTripped.bind(this));
 
-    this.alarmingService = new Service.Switch('Alarming', 'alarming');
-    this.alarmingService.getCharacteristic(Characteristic.On)
+    this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
+    this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
         .on('get', this.getAlarming.bind(this))
         .on('set', this.setAlarming.bind(this));
 
@@ -178,8 +178,8 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
             }
             else {
                 this.armedService
-                    .getCharacteristic(Characteristic.On)
-                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+                    .getCharacteristic(Characteristic.ContactSensorState)
+                    .setValue(Characteristic.ContactSensorState.CONTACT_DETECTED, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.armDelay * 1000);
 
@@ -197,16 +197,16 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         // Clear armed, triggered and alarming states
         this.armed = false;
         this.armedService
-            .getCharacteristic(Characteristic.On)
-            .setValue(false, undefined, LOGIC_CONTEXT);
+            .getCharacteristic(Characteristic.ContactSensorState)
+            .setValue(Characteristic.ContactSensorState.CONTACT_NOT_DETECTED, undefined, LOGIC_CONTEXT);
         this.tripped = true;
         this.trippedService
             .getCharacteristic(Characteristic.On)
             .setValue(false, undefined, LOGIC_CONTEXT);
         this.alarming = true;
         this.alarmingService
-            .getCharacteristic(Characteristic.On)
-            .setValue(false, undefined, LOGIC_CONTEXT);
+            .getCharacteristic(Characteristic.ContactSensorState)
+            .setValue(Characteristic.ContactSensorState.CONTACT_NOT_DETECTED, undefined, LOGIC_CONTEXT);
     }
     callback(null);
 };
@@ -272,8 +272,8 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
             }
             else {
                 this.alarmingService
-                    .getCharacteristic(Characteristic.On)
-                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+                    .getCharacteristic(Characteristic.ContactSensorState)
+                    .setValue(Characteristic.ContactSensorState.CONTACT_DETECTED, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.alarmDelay * 1000);
 
