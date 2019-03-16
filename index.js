@@ -51,7 +51,7 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         let currentAwayState = that.alarmPanelAccessory.away;
 
         const newAwayState = request.body.away;
-        that.log(`newAwayState: ${newAwayState}`);
+        that.log(`currentAwayState: ${currentAwayState} => newAwayState: ${newAwayState}`);
 
         if (currentAwayState !== newAwayState) {
             // that.alarmPanelAccessory.away = newAwayState;
@@ -166,6 +166,7 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback) {
             }
         }, this.armDelay * 1000);
         this.armedTimeout.unref();
+        this.log('Armed Timeout set...');
     }
     else {
 
@@ -214,6 +215,33 @@ AlarmPanelAccessory.prototype.getTripped = function(callback) {
 AlarmPanelAccessory.prototype.setTripped = function(tripped, callback) {
     this.log(`Setting current value of Tripped to: ${tripped}`);
     this.tripped = tripped;
+
+    // Clear timeout regardless
+    if (this.alarmingTimeout) {
+        clearTimeout(this.alarmingTimeout);
+    }
+
+    if (tripped) {
+
+        const that = this;
+        // Set timeout to transition to alarming
+        this.alarmingTimeout = setTimeout(() => {
+            that.log('Alarming Timeout expired!');
+
+            // prevent race condition
+            if (!that.away) {
+                that.log('Ignoring Alarming Timeout as Away is false!');
+            }
+            else {
+                that.alarming = true;
+                that.alarmingService
+                    .getCharacteristic(Characteristic.On)
+                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+            }
+        }, this.alarmDelay * 1000);
+        this.alarmingTimeout.unref();
+        this.log('Alarming Timeout set...');
+    }
     callback(null);
 };
 
