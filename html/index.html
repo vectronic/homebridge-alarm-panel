@@ -36,7 +36,7 @@
             <h1 class="mx-auto">
                 <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
                 <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
-                <span id="alertingLabel" class="badge badge-pill badge-danger d-none">Alerting</span>
+                <span id="alarmingLabel" class="badge badge-pill badge-danger d-none">Alarming</span>
             </h1>
         </div>
         <!--<div class="d-flex flex-column fixed-top">-->
@@ -59,7 +59,7 @@
             const awayToggle = document.getElementById('awayToggle');
             const armedLabel = document.getElementById('armedLabel');
             const trippedLabel = document.getElementById('trippedLabel');
-            const alertingLabel = document.getElementById('alertingLabel');
+            const alarmingLabel = document.getElementById('alarmingLabel');
 
             // const trippedAudio = document.getElementById('trippedAudio');
 
@@ -74,9 +74,10 @@
 
             let remoteUpdateInProgress = false;
 
-            function makeRequest(method, url) {
+            function makeRequest(method, url, body) {
                 return new Promise(function (resolve, reject) {
                     const xhr = new XMLHttpRequest();
+                    xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.open(method, url);
                     xhr.onload = function () {
                         if (this.status >= 200 && this.status < 300) {
@@ -95,7 +96,7 @@
                             statusText: xhr.statusText
                         });
                     };
-                    xhr.send();
+                    xhr.send(body);
                 });
             }
 
@@ -107,14 +108,18 @@
             }
 
 
-            // function setRemoteAwayState(away) {
-            //     return makeRequest('GET', `${setAwayStateUrlPrefix}${away}`).then((response) => {
-            //
-            //         // Re-enable handling of remote state polling
-            //         remoteUpdateInProgress = false;
-            //     });
-            //
-            // }
+            function setRemoteAwayState(localAway) {
+
+                const body = {
+                    away: localAway
+                };
+
+                return makeRequest('POST', stateUrl, JSON.stringify(body)).then(() => {
+
+                    // Re-enable handling of remote state polling
+                    remoteUpdateInProgress = false;
+                });
+            }
 
 
             function renderLocalState() {
@@ -138,10 +143,10 @@
                     trippedLabel.classList.add('d-none');
                 }
                 if (state.alarming) {
-                    alertingLabel.classList.remove('d-none');
+                    alarmingLabel.classList.remove('d-none');
                 }
                 else {
-                    alertingLabel.classList.add('d-none');
+                    alarmingLabel.classList.add('d-none');
                 }
             }
 
@@ -168,20 +173,20 @@
             }
 
 
-            // awayToggle.onchange = (event) => {
-            //
-            //     const localAway = event.target.checked;
-            //     console.log(`local away: ${localAway}`);
-            //
-            //     if (localAway !== away) {
-            //
-            //         // Disable handling of remote state polling
-            //         remoteUpdateInProgress = true;
-            //
-            //         // Push the local away change to remote
-            //         setRemoteAwayState(localAway);
-            //     }
-            // };
+            awayToggle.onchange = (event) => {
+
+                const localAway = event.target.checked;
+                console.log(`local away: ${localAway}`);
+
+                if (localAway !== state.away) {
+
+                    // Disable handling of remote state polling
+                    remoteUpdateInProgress = true;
+
+                    // Push the local away change to remote
+                    setRemoteAwayState(localAway);
+                }
+            };
 
 
             // startButton.onclick = () => {

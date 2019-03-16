@@ -150,19 +150,19 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         this.armedTimeout = setTimeout((function() {
             this.log('Armed timeout expired!');
 
-            // prevent race condition
+            // prevent race conditions - not sure if needed but feels safer
             if (!this.away) {
                 this.log('Ignoring Armed Timeout as Away is false!');
             }
             else {
-                // this.armed = true;
                 this.armedService
                     .getCharacteristic(Characteristic.On)
                     .setValue(true, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.armDelay * 1000);
 
-        // this.armedTimeout.unref();
+        // Do this to not prevent homebridge shutdown
+        this.armedTimeout.unref();
         this.log('Armed timeout set...');
     }
     else {
@@ -238,18 +238,25 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         this.alarmingTimeout = setTimeout((function() {
             this.log('Alarming timeout expired!');
 
-            // prevent race condition
+            // prevent race conditions - not sure if needed but feels safer
             if (!this.away) {
                 this.log('Ignoring Alarming Timeout as Away is false!');
-            } else {
-                // this.alarming = true;
+            }
+            else if (!this.armed) {
+                this.log('Ignoring Alarming Timeout as Armed is false!');
+            }
+            else if (!this.tripped) {
+                this.log('Ignoring Alarming Timeout as Tripped is false!');
+            }
+            else {
                 this.alarmingService
                     .getCharacteristic(Characteristic.On)
                     .setValue(true, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.alarmDelay * 1000);
 
-        // this.alarmingTimeout.unref();
+        // Do this to not prevent homebridge shutdown
+        this.alarmingTimeout.unref();
         this.log('Alarming timeout set...');
     }
     callback(null);
