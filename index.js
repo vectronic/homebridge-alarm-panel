@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const serveStatic = require('serve-static');
 
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
+const TIMEOUT_CONTEXT = 'ALARM_PANEL_TIMEOUT';
+const LOGIC_CONTEXT = 'ALARM_PANEL_LOGIC';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
 
 let Service;
@@ -52,9 +54,10 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         that.log(`newAwayState: ${newAwayState}`);
 
         if (currentAwayState !== newAwayState) {
-            that.alarmPanelAccessory.away = newAwayState;
-            that.alarmPanelAccessory.awayService.getCharacteristic(Characteristic.On)
-                .updateValue(newAwayState, undefined, WEB_UI_CONTEXT);
+            // that.alarmPanelAccessory.away = newAwayState;
+            that.alarmPanelAccessory.awayService
+                .getCharacteristic(Characteristic.On)
+                .setValue(newAwayState, undefined, WEB_UI_CONTEXT);
         }
 
         response.writeHead(200, JSON_CONTENT);
@@ -76,15 +79,18 @@ function AlarmPanelAccessory(log, config) {
     this.log = log;
     this.config = config;
 
-    this.name = config.name;
+    this.name = config.name || 'Alarm Panel';
 
-    this.armDelay = config.arm_delay;
-    this.alarmDelay = config.alarm_delay;
+    this.armDelay = config.arm_delay || 60;
+    this.alarmDelay = config.alarm_delay || 60;
 
     this.away = false;
     this.armed = false;
     this.tripped = false;
     this.alarming = false;
+
+    this.armedTimeout = null;
+    this.alarmingTimeout = null;
 
     this.awayService = new Service.Switch('Away', 'away');
     this.awayService.getCharacteristic(Characteristic.On)
@@ -135,6 +141,53 @@ AlarmPanelAccessory.prototype.getAway = function(callback) {
 AlarmPanelAccessory.prototype.setAway = function(away, callback) {
     this.log(`Setting current value of Away to: ${away}`);
     this.away = away;
+
+    // Clear timeout regardless
+    if (this.armedTimeout) {
+        clearTimeout(this.armedTimeout);
+    }
+
+    if (away) {
+
+        const that = this;
+        // Set timeout to transition to armed
+        this.armedTimeout = setTimeout(() => {
+            that.log('Armed Timeout expired!');
+
+            // prevent race condition
+            if (!that.away) {
+                that.log('Ignoring Armed Timeout as Away is false!');
+            }
+            else {
+                that.armed = true;
+                that.armedService
+                    .getCharacteristic(Characteristic.On)
+                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+            }
+        }, this.armDelay * 1000);
+        this.armedTimeout.unref();
+    }
+    else {
+
+        // Clear any alarming timeouts
+        if (this.alarmingTimeout) {
+            clearTimeout(this.alarmingTimeout);
+        }
+
+        // Clear armed, triggered and alarming states
+        this.armed = false;
+        this.armedService
+            .getCharacteristic(Characteristic.On)
+            .setValue(false, undefined, LOGIC_CONTEXT);
+        this.tripped = true;
+        this.trippedService
+            .getCharacteristic(Characteristic.On)
+            .setValue(false, undefined, LOGIC_CONTEXT);
+        this.alarming = true;
+        this.alarmingService
+            .getCharacteristic(Characteristic.On)
+            .setValue(false, undefined, LOGIC_CONTEXT);
+    }
     callback(null);
 };
 
