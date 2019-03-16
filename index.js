@@ -141,15 +141,12 @@ function AlarmPanelAccessory(log, config) {
 
 AlarmPanelAccessory.prototype.getState = function() {
 
-    const state = {
+    return {
         away: this.away,
         armed: this.armed,
         tripped: this.tripped,
         alarming: this.alarming
     };
-
-    this.log(`Getting current accessory state: ${JSON.stringify(state)}`);
-    return state;
 };
 
 

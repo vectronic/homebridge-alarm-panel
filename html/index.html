@@ -85,6 +85,34 @@
 
             let remoteUpdateInProgress = false;
 
+
+            armingTone.onended = () => {
+                if (state.away && !state.armed) {
+                    armingToneTimeout = setTimeout(() => {
+                        armingTone.play();
+                    }, armingToneDelay * 1000);
+                }
+            };
+
+
+            trippedTone.onended = () => {
+                if (state.tripped === true) {
+                    trippedToneTimeout = setTimeout(() => {
+                        trippedTone.play();
+                    }, trippedToneDelay * 1000);
+                }
+            };
+
+
+            alarmingTone.onended = () => {
+                if (state.alarming === true) {
+                    alarmingToneTimeout = setTimeout(() => {
+                        alarmingTone.play();
+                    }, alarmingToneDelay * 1000);
+                }
+            };
+
+
             function makeRequest(method, url, body) {
                 return new Promise(function (resolve, reject) {
                     const xhr = new XMLHttpRequest();
@@ -141,85 +169,73 @@
 
 
             function startArmingTone() {
-                if ((armingToneTimeout != null) || !armingTone.paused) {
+                console.log('startArmingTone');
+                if (armingToneTimeout != null) {
                     console.log('arming tone already started...');
                 }
                 else {
-                    armingTone.onended = () => {
-                        armingToneTimeout = setTimeout(() => {
-                            armingTone.play();
-                        }, armingToneDelay * 1000);
-                    };
                     armingTone.play();
                 }
             }
 
 
             function stopArmingTone() {
-                if ((armingToneTimeout == null) || armingTone.paused) {
+                console.log('stopArmingTone');
+                if (armingToneTimeout == null) {
                     console.log('arming tone already stopped...');
                 }
                 else {
                     clearTimeout(armingToneTimeout);
                     armingToneTimeout = null;
                     armingTone.pause();
-                    delete armingTone.onended;
                 }
             }
 
 
             function startTrippedTone() {
-                if ((trippedToneTimeout != null) || !trippedTone.paused) {
+                console.log('startTrippedTone');
+                if (trippedToneTimeout != null) {
                     console.log('tripped tone already started...');
                 }
                 else {
-                    trippedTone.onended = () => {
-                        trippedToneTimeout = setTimeout(() => {
-                            trippedTone.play();
-                        }, trippedToneDelay * 1000);
-                    };
                     trippedTone.play();
                 }
             }
 
 
             function stopTrippedTone() {
-                if ((trippedToneTimeout == null) || trippedTone.paused) {
+                console.log('stopTrippedTone');
+                if (trippedToneTimeout == null) {
                     console.log('tripped tone already stopped...');
                 }
                 else {
                     clearTimeout(trippedToneTimeout);
                     trippedToneTimeout = null;
                     trippedTone.pause();
-                    delete trippedTone.onended;
                 }
             }
 
 
             function startAlarmingTone() {
-                if ((alarmingToneTimeout != null) || !alarmingTone.paused) {
+                console.log('startAlarmingTone');
+                if (alarmingToneTimeout != null) {
                     console.log('alarming tone already started...');
                 }
                 else {
-                    alarmingTone.onended = () => {
-                        alarmingToneTimeout = setTimeout(() => {
-                            alarmingTone.play();
-                        }, alarmingToneDelay * 1000);
-                    };
                     alarmingTone.play();
                 }
             }
 
 
             function stopAlarmingTone() {
-                if ((alarmingToneTimeout == null) || alarmingTone.paused) {
+                console.log('stopAlarmingTone');
+                if (alarmingToneTimeout == null) {
                     console.log('alarming tone already stopped...');
                 }
                 else {
                     clearTimeout(alarmingToneTimeout);
                     alarmingToneTimeout = null;
                     alarmingTone.pause();
-                    delete alarmingTone.onended;
                 }
             }
 
@@ -310,9 +326,9 @@
             connectButton.onclick = () => {
                 getConfig().then((config) => {
 
-                    armingTone.src = config.arming_tone_mp3_url;
-                    trippedTone.src = config.tripped_tone_mp3_url;
-                    alarmingTone.src = config.alarming_tone_mp3_url;
+                    // armingTone.src = config.arming_tone_mp3_url;
+                    // trippedTone.src = config.tripped_tone_mp3_url;
+                    // alarmingTone.src = config.alarming_tone_mp3_url;
 
                     armingToneDelay = config.arming_tone_interval;
                     trippedToneDelay = config.tripped_tone_interval;
