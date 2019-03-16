@@ -5,22 +5,23 @@
 
 Provides a web UI alarm panel to view and manage a HomeKit based alarm system.
 
-Using on a spare mobile device which has been position near an entrance door
-it can act as a secure (fingerprint or passcode protected)
-alarm control panel.
+Using on a spare mobile device which has been position near an entrance door it can act as a secure 
+(fingerprint or passcode protected) alarm control panel.
 
 The web UI provides:
  
 * home/away mode control
-* arming, tripped and alerting states with visual and audio indication 
+* arming, armed, tripped and alerting states with visual and audio indication 
 
-You can use other HomeKit/Homebridge accessories and HomeKit automation to set the tripped state 
-(e.g. via an entry detector changing state) and to alert you in the alarming state 
-(e.g. via an SMS notification). 
+You can use other HomeKit/Homebridge accessories and HomeKit automation to:
+
+* set the tripped state when any door or window is opened (e.g. via an entry detection accessory) if the alarm is armed.
+* alert you in the alarming state (e.g. via an SMS notification accessory such as 
+[homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)). 
 
 ### Installation
 
-1. Install homebridge using: `npm install -g homebridge`
+1. Install Homebridge using: `npm install -g homebridge`
 1. Install this plugin using: `npm install -g homebridge-alarm-panel`
 1. Update your configuration file. See `sample-config.json` snippet below.
 
@@ -32,75 +33,79 @@ Example `config.json` entry:
 "platforms": [
   {
     "platform": "AlarmPanel",
-    "web_ui_port": "8888"
+    "web_ui_port": "8888",
+    "name": "Alarm Panel",
+    "arm_delay": 60,
+    "alarm_delay": 60
   }
 ]
 ```
 
+`arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on.
+
+`alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on.
+
 ### Integration
 
-The platform provides one accessory which exposes an *Alarm Panel* service with the following Characteristics:
+The platform provides one accessory with the following switch services:
 
-* *Armed Mode*: *Home* or *Away*
-* *Alarm State*: *Off*, *Arming*, *Armed*, *Tripped*, *Alerting*
-
-You should integrate these via HomeKit automation rules so that:
- 
-- The *Alarm State* is set to *Tripped* if entry is detected ONLY IF the current *Alarm State* is *Armed*.
-- You are notified when the *Alarm State* is set to *Alerting* 
-    (e.g. send an SMS using [homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)) 
-
-##### HTTP REST API
-
-The plugin provides a simple HTTP REST API which is used by the web UI.
-
-The current Armed Mode can be queried by performing a GET of:
-
-`http://yourHomebridgeServerIp:web_ui_port/api/armedMode`
-
-This will return a response with content type `application/json` with the body content in the form:
-
-    {
-        "armedMode": "<HOME|AWAY>"
-    }
-
-The Armed Mode can be updated by performing a POST to:
-
-`http://yourHomebridgeServerIp:web_ui_port/api/armedMode`
-
-with the body content in the form:
-
-    {
-        "armedMode": "<HOME|AWAY>"
-    }
-    
-This will return a response with content type `application/json` with the body content in the form:
-
-    {
-        "armedMode": "<HOME|AWAY>"
-    }
-
-The current Alarm State can be queried by performing a GET of:
-
-`http://yourHomebridgeServerIp:web_ui_port/api/alarmState`
-
-This will return a response with content type `application/json` with the body content in the form:
-
-    {
-        "alarmState": "<OFF|ARMING|ARMED|TRIPPED|ALARMING>"
-    }
+* *Away*: This can be manually turned on/off via the Home app or the alarm control panel web UI as you enter or leave the home.
+* *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` following the *Away* 
+switch being turned on and it is immediately turned off when the *Away* switch is turned off.
+* *Tripped*: HomeKit automation should be configured to turn this on when entry is detected 
+(e.g. via an entry detection accessory) ONLY if the *Armed* switch is on. The state can be set manually but it is not the intended scenario.
+* *Alarming*: This is automatically managed by the plugin: It is turned on after `alarm_delay` following the *Tripped* 
+switch being turned on and it is immediately turned off when the *Away* switch is turned off. HomeKit automation should be
+configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on.
 
 ### Usage
  
 Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
 
-When the *Armed Armed* is set to *Away* (via the Home app or the alarm panel web UI) the *Alarm State* will automatically
-transition to *Arming* and a visible and audible cue will occur.
+When the Home/Away button is toggled to away, the *Away* switch will be turned on. An audible alert will occur
+for the `arm_delay` time after which point the *Armed* switch will be turned on and the audible alert will stop.
 
-The *Armed State* will transition automatically to *Armed* after 60 seconds (allowing you time to depart).
+If the *Tripped* switch is turned on, an audible alert will occur until either:
 
-When HomeKit automation transitions the *Alarm State* to *Tripped* (due to entry detection), 
-a visible and audible cue will occur.
+* the Home/Away button is toggled to home causing the *Away* switch to be turned off.
+* the `alarm_delay` period expires causing the *Alarming* switch to be turned off.
 
-If the *Armed Mode* is not set to *Home* within 60 seconds, the *Alarm State* will transition from *Tripped* to *Alerting*
-and a visible and audible cue will occur.
+If the *Alarming* switch is turned on, an audible alert will occur until:
+
+* the Home/Away button is toggled to home causing the *Away* switch to be turned off.
+
+##### HTTP REST API
+
+The plugin provides a simple HTTP REST API which is used by the web UI.
+
+The current state of each switch can be queried by performing the following GET request:
+
+`http://yourHomebridgeServerIp:web_ui_port/api/state`
+
+This will return a response with content type `application/json` with the body content in the form:
+
+    {
+        "away": <true|false>,
+        "armed": <true|false>,
+        "tripped": <true|false>,
+        "alarming": <true|false>
+    }
+
+The state can be updated by performing the following POST request:
+
+`http://yourHomebridgeServerIp:web_ui_port/api/state`
+
+with the body content in the form (only the *away* switch state can be managed):
+
+    {
+        "away": <true|false>
+    }
+    
+This will return a response with content type `application/json` with the body content in the form:
+
+    {
+        "away": <true|false>,
+        "armed": <true|false>,
+        "tripped": <true|false>,
+        "alarming": <true|false>
+    }
