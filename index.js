@@ -213,7 +213,12 @@ AlarmPanelAccessory.prototype.getTripped = function(callback) {
 
 
 AlarmPanelAccessory.prototype.setTripped = function(tripped, callback) {
-    this.log(`Setting current value of Tripped to: ${tripped}`);
+    this.log(`Requested to set current value of Tripped to: ${tripped}`);
+
+    if (tripped && !this.armed) {
+        this.log('State is not armed, ignoring request to set tripped to true...');
+        return;
+    }
     this.tripped = tripped;
 
     // Clear timeout regardless
