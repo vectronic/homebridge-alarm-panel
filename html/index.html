@@ -39,11 +39,13 @@
                 <span id="alarmingLabel" class="badge badge-pill badge-danger d-none">Alarming</span>
             </h1>
         </div>
-        <!--<div class="d-flex flex-column fixed-top">-->
-            <!--<button id="startButton" type="button" class="btn btn-success vh-100">Start</button>-->
-        <!--</div>-->
+        <div class="d-flex flex-column fixed-top">
+            <button id="connectButton" type="button" class="btn btn-success vh-100">Connect</button>
+        </div>
 
-        <!--<audio id="trippedAudio" src="assets/audio/beep.mp3"></audio>-->
+        <audio id="armingTone" src="assets/audio/buzz.mp3"></audio>
+        <audio id="trippedTone" src="assets/audio/buzz.mp3"></audio>
+        <audio id="alarmingTone" src="assets/audio/beep.mp3"></audio>
 
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -52,19 +54,28 @@
 
         <script>
 
-            const stateUrl = '/api/state';
+            const stateUrl = 'http://192.168.35.8:8888/api/state';
+            const configUrl = 'http://192.168.35.8:8888/api/config';
 
-            // const startButton = document.getElementById('startButton');
+            const connectButton = document.getElementById('connectButton');
 
             const awayToggle = document.getElementById('awayToggle');
             const armedLabel = document.getElementById('armedLabel');
             const trippedLabel = document.getElementById('trippedLabel');
             const alarmingLabel = document.getElementById('alarmingLabel');
 
-            // const trippedAudio = document.getElementById('trippedAudio');
+            const armingTone = document.getElementById('armingTone');
+            const trippedTone = document.getElementById('trippedTone');
+            const alarmingTone = document.getElementById('alarmingTone');
 
-            // let away = false;
-            // let tripped = false;
+            let armingToneDelay = 3;
+            let trippedToneDelay = 2;
+            let alarmingToneDelay = 1;
+
+            let armingToneTimeout = null;
+            let trippedToneTimeout = null;
+            let alarmingToneTimeout = null;
+
             let state = {
                 away: false,
                 armed: false,
@@ -77,8 +88,8 @@
             function makeRequest(method, url, body) {
                 return new Promise(function (resolve, reject) {
                     const xhr = new XMLHttpRequest();
-                    xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.open(method, url);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.onload = function () {
                         if (this.status >= 200 && this.status < 300) {
                             resolve(xhr.response);
@@ -108,6 +119,13 @@
             }
 
 
+            function getConfig() {
+                return makeRequest('GET', configUrl).then((response) => {
+                    return JSON.parse(response);
+                });
+            }
+
+
             function setRemoteAwayState(localAway) {
 
                 const body = {
@@ -122,31 +140,131 @@
             }
 
 
+            function startArmingTone() {
+                if ((armingToneTimeout != null) || !armingTone.paused) {
+                    console.log('arming tone already started...');
+                }
+                else {
+                    armingTone.onended = () => {
+                        armingToneTimeout = setTimeout(() => {
+                            armingTone.play();
+                        }, armingToneDelay * 1000);
+                    };
+                    armingTone.play();
+                }
+            }
+
+
+            function stopArmingTone() {
+                if ((armingToneTimeout == null) || armingTone.paused) {
+                    console.log('arming tone already stopped...');
+                }
+                else {
+                    clearTimeout(armingToneTimeout);
+                    armingToneTimeout = null;
+                    armingTone.pause();
+                    delete armingTone.onended;
+                }
+            }
+
+
+            function startTrippedTone() {
+                if ((trippedToneTimeout != null) || !trippedTone.paused) {
+                    console.log('tripped tone already started...');
+                }
+                else {
+                    trippedTone.onended = () => {
+                        trippedToneTimeout = setTimeout(() => {
+                            trippedTone.play();
+                        }, trippedToneDelay * 1000);
+                    };
+                    trippedTone.play();
+                }
+            }
+
+
+            function stopTrippedTone() {
+                if ((trippedToneTimeout == null) || trippedTone.paused) {
+                    console.log('tripped tone already stopped...');
+                }
+                else {
+                    clearTimeout(trippedToneTimeout);
+                    trippedToneTimeout = null;
+                    trippedTone.pause();
+                    delete trippedTone.onended;
+                }
+            }
+
+
+            function startAlarmingTone() {
+                if ((alarmingToneTimeout != null) || !alarmingTone.paused) {
+                    console.log('alarming tone already started...');
+                }
+                else {
+                    alarmingTone.onended = () => {
+                        alarmingToneTimeout = setTimeout(() => {
+                            alarmingTone.play();
+                        }, alarmingToneDelay * 1000);
+                    };
+                    alarmingTone.play();
+                }
+            }
+
+
+            function stopAlarmingTone() {
+                if ((alarmingToneTimeout == null) || alarmingTone.paused) {
+                    console.log('alarming tone already stopped...');
+                }
+                else {
+                    clearTimeout(alarmingToneTimeout);
+                    alarmingToneTimeout = null;
+                    alarmingTone.pause();
+                    delete alarmingTone.onended;
+                }
+            }
+
+
             function renderLocalState() {
-                console.log('renderLocalState');
 
-                awayToggle.checked = state.away;
+                if (awayToggle.checked !== state.away) {
+                    awayToggle.checked = state.away;
 
-                const awayToggleEvent = new Event('change');
-                awayToggle.dispatchEvent(awayToggleEvent);
+                    const awayToggleEvent = new Event('change');
+                    awayToggle.dispatchEvent(awayToggleEvent);
+                }
+                if (state.away && !state.armed) {
+                    startArmingTone();
+                }
+                else {
+                    stopArmingTone();
+                    stopTrippedTone();
+                    stopAlarmingTone();
+                }
 
                 if (state.armed) {
                     armedLabel.classList.remove('d-none');
+                    stopArmingTone();
                 }
                 else {
                     armedLabel.classList.add('d-none');
                 }
+
                 if (state.tripped) {
                     trippedLabel.classList.remove('d-none');
+                    startTrippedTone();
                 }
                 else {
                     trippedLabel.classList.add('d-none');
+                    stopTrippedTone();
                 }
+
                 if (state.alarming) {
                     alarmingLabel.classList.remove('d-none');
+                    startAlarmingTone();
                 }
                 else {
                     alarmingLabel.classList.add('d-none');
+                    stopAlarmingTone();
                 }
             }
 
@@ -166,7 +284,7 @@
 
                     setTimeout(function() {
                         pollRemoteState();
-                    }, 3000);
+                    }, 2000);
                 }).catch((err) => {
                     console.log(err);
                 });
@@ -189,16 +307,35 @@
             };
 
 
-            // startButton.onclick = () => {
-            //     trippedAudio.play();
-            //     trippedAudio.pause();
-            //
-            //     startButton.classList.add('d-none');
-            //     startButton.classList.add('vh-0');
-            //     startButton.disabled = true;
-            // };
+            connectButton.onclick = () => {
+                getConfig().then((config) => {
 
-            pollRemoteState();
+                    armingTone.src = config.arming_tone_mp3_url;
+                    trippedTone.src = config.tripped_tone_mp3_url;
+                    alarmingTone.src = config.alarming_tone_mp3_url;
+
+                    armingToneDelay = config.arming_tone_interval;
+                    trippedToneDelay = config.tripped_tone_interval;
+                    alarmingToneDelay = config.alarming_tone_interval;
+
+                    // Starting playback via a user click event is required to unlock the browser security preventing scripted playback later
+                    armingTone.play();
+                    armingTone.pause();
+                    trippedTone.play();
+                    trippedTone.pause();
+                    alarmingTone.play();
+                    alarmingTone.pause();
+
+                    connectButton.classList.add('d-none');
+                    connectButton.classList.add('vh-0');
+                    connectButton.disabled = true;
+
+                    pollRemoteState();
+
+                }).catch((err) => {
+                    console.log(err);
+                });
+            };
 
         </script>
     </body>

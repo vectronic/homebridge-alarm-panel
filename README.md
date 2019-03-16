@@ -34,16 +34,37 @@ Example `config.json` entry:
   {
     "platform": "AlarmPanel",
     "web_ui_port": "8888",
-    "name": "Alarm Panel",
-    "arm_delay": 60,
-    "alarm_delay": 60
+    "arm_delay": 30,
+    "alarm_delay": 30,
+    "arming_tone_interval": 3,
+    "tripped_tone_interval": 2,
+    "alarming_tone_interval": 1,
+    "arming_tone_mp3_url": "assets/audio/buzz.mp3",
+    "tripped_tone_mp3_url": "assets/audio/buzz.mp3",
+    "alarming_tone_mp3_url": "assets/audio/beep.mp3"
   }
 ]
 ```
 
-`arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on.
+Where:
 
-`alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on.
+* `web_ui_port` is the port that the HTML web UI and REST API are served from.
+* `arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on. 
+Defaults to 30 seconds.
+* `alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on. 
+Defaults to 30 seconds.
+* `arming_tone_interval` is the interval in seconds between the arming tone being played in the web UI. 
+Defaults to 3 seconds.
+* `tripped_tone_interval` is the interval in seconds between the tripped tone being played in the web UI. 
+Defaults to 2 seconds.
+* `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI. 
+Defaults to 1 seconds.
+* `arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
+Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
+* `tripped_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the tripped tone in the web UI. 
+Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
+* `alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
+Defaults to an internally hosted relative URL of `assets/audio/beep.mp3`
 
 ### Integration
 
@@ -64,7 +85,9 @@ logic prevents this being set on or off manually.
 
 ### Usage
  
-Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
+1. Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
+1. Tap on the "Connect" button to initiate connection between the web UI and the Homebridge accessory.
+1. Tap on the "Home/Away" toggle button as you enter or leave the house.
 
 When the Home/Away button is toggled to away, the *Away* switch will be turned on. An audible alert will occur
 for the `arm_delay` time after which point the *Armed* switch will be turned on and the audible alert will stop.
@@ -78,7 +101,9 @@ If the *Alarming* switch is turned on, an audible alert will occur until:
 
 * the Home/Away button is toggled to home causing the *Away* switch to be turned off.
 
-##### HTTP REST API
+### HTTP REST API Details
+
+NOTE: This section provides details of the internal design. Knowledge of this is not required to use the plugin.
 
 The plugin provides a simple HTTP REST API which is used by the web UI.
 
@@ -113,3 +138,24 @@ This will return a response with content type `application/json` with the body c
         "tripped": <true|false>,
         "alarming": <true|false>
     }
+
+The web UI specific config can be obtained by performing the following GET request:
+
+`http://yourHomebridgeServerIp:web_ui_port/api/config`
+
+This will return a response with content type `application/json` with the body content in the form:
+
+    {
+        "arming_tone_interval": 3,
+        "tripped_tone_interval": 2,
+        "alarming_tone_interval": 1,
+        "arming_tone_mp3_url": "assets/audio/buzz.mp3",
+        "tripped_tone_mp3_url": "assets/audio/buzz.mp3",
+        "alarming_tone_mp3_url": "assets/audio/beep.mp3"
+    }
+
+### Help etc.
+
+If you have a query or problem, raise an issue in GitHub, or better yet submit a PR!
+
+The web UI has been tested on an iPhone running Safari.

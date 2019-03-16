@@ -22,8 +22,27 @@ function AlarmPanelPlatform(log, config) {
     this.log = log;
     this.config = config;
 
-    this.webUiPort = config["web_ui_port"] || 8888;
+    this.webUiPort = config['web_ui_port'] || 8888;
+
+    this.armingToneInterval = config['arming_tone_interval'] || 3;
+    this.trippedToneInterval = config['tripped_tone_interval'] || 3;
+    this.alarmingToneInterval = config['alarming_tone_interval'] || 3;
+    this.armingToneMp3Url = config['arming_tone_mp3_url'] || 'assets/audio/buzz.mp3';
+    this.trippedToneMp3Url = config['tripped_tone_mp3_url'] || 'assets/audio/buzz.mp3';
+    this.alarmingToneMp3Url = config['alarming_tone_mp3_url'] || 'assets/audio/beep.mp3';
 }
+
+
+AlarmPanelPlatform.prototype.getWebUiConfig = function() {
+    return {
+        arming_tone_interval: this.armingToneInterval,
+        tripped_tone_interval: this.trippedToneInterval,
+        alarming_tone_interval: this.alarmingToneInterval,
+        arming_tone_mp3_url: this.armingToneMp3Url,
+        tripped_tone_mp3_url: this.trippedToneMp3Url,
+        alarming_tone_mp3_url: this.alarmingToneMp3Url
+    };
+};
 
 
 AlarmPanelPlatform.prototype.accessories = function(callback) {
@@ -42,6 +61,12 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
+    }).bind(this));
+
+    app.get('/api/config', (function(request, response) {
+
+        response.writeHead(200, JSON_CONTENT);
+        response.end(JSON.stringify(this.getWebUiConfig()));
     }).bind(this));
 
     app.post('/api/state', jsonParser, (function(request, response) {
@@ -75,10 +100,10 @@ function AlarmPanelAccessory(log, config) {
 
     this.log = log;
 
-    this.name = config.name || 'Alarm Panel';
+    this.name = 'Alarm Panel';
 
-    this.armDelay = config.arm_delay || 60;
-    this.alarmDelay = config.alarm_delay || 60;
+    this.armDelay = config.arm_delay || 30;
+    this.alarmDelay = config.alarm_delay || 30;
 
     this.away = false;
     this.armed = false;
