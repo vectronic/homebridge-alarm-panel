@@ -35,7 +35,7 @@
     </head>
     <body>
 
-        <div class="d-flex flex-column vh-100 d-none fixed-top">
+        <div id="mainDiv" class="d-flex flex-column vh-100 d-none fixed-top">
             <input id="awayToggle" type="checkbox" data-toggle="toggle" data-on="Away" data-off="Home" data-onstyle="info" data-offstyle="default" data-width="100%" data-height="90%">
             <h1 class="mx-auto">
                 <span id="armingLabel" class="badge badge-pill badge-info d-none">Arming</span>
@@ -61,6 +61,8 @@
 
             const stateUrl = 'api/state';
             const configUrl = 'api/config';
+
+            const mainDiv = document.getElementById('mainDiv');
 
             const connectButton = document.getElementById('connectButton');
 
@@ -312,6 +314,8 @@
                 connectButton.classList.add('d-none');
                 connectButton.classList.add('vh-0');
                 connectButton.disabled = true;
+
+                mainDiv.requestFullscreen();
 
                 pollRemoteState();
             };
