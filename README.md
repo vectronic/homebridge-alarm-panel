@@ -34,6 +34,7 @@ Example `config.json` entry:
   {
     "platform": "AlarmPanel",
     "web_ui_port": "8888",
+    "web_ui_poll_interval": 2,
     "arm_delay": 30,
     "alarm_delay": 30,
     "arming_tone_interval": 3,
@@ -49,6 +50,8 @@ Example `config.json` entry:
 Where:
 
 * `web_ui_port` is the port that the HTML web UI and REST API are served from.
+* `web_ui_poll_interval` is the interval in seconds between requests from the web UI to Homebridge to get the current state.
+Defaults to 2 seconds.
 * `arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on. 
 Defaults to 30 seconds.
 * `alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on. 
@@ -148,6 +151,7 @@ The web UI specific config can be obtained by performing the following GET reque
 This will return a response with content type `application/json` with the body content in the form:
 
     {
+        "web_ui_poll_interval": 2,
         "arming_tone_interval": 3,
         "tripped_tone_interval": 1,
         "alarming_tone_interval": 1,

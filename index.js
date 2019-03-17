@@ -24,6 +24,7 @@ function AlarmPanelPlatform(log, config) {
 
     this.webUiPort = config['web_ui_port'] || 8888;
 
+    this.webUiPollInterval = config['web_ui_poll_interval'] || 2;
     this.armingToneInterval = config['arming_tone_interval'] || 3;
     this.trippedToneInterval = config['tripped_tone_interval'] || 1;
     this.alarmingToneInterval = config['alarming_tone_interval'] || 1;
@@ -35,6 +36,7 @@ function AlarmPanelPlatform(log, config) {
 
 AlarmPanelPlatform.prototype.getWebUiConfig = function() {
     return {
+        web_ui_poll_interval: this.webUiPollInterval,
         arming_tone_interval: this.armingToneInterval,
         tripped_tone_interval: this.trippedToneInterval,
         alarming_tone_interval: this.alarmingToneInterval,

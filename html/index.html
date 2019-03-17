@@ -28,6 +28,8 @@
         <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml">
         <meta name="msapplication-TileColor" content="#ffffff">
         <meta name="msapplication-TileImage" content="/assets/favicon/ms-icon-144x144.png">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-touch-fullscreen" content="yes">
     </head>
     <body>
 
@@ -69,6 +71,8 @@
             const armingTone = document.getElementById('armingTone');
             const trippedTone = document.getElementById('trippedTone');
             const alarmingTone = document.getElementById('alarmingTone');
+
+            let pollingInterval = 2;
 
             let armingToneDelay = 3;
             let trippedToneDelay = 1;
@@ -270,7 +274,7 @@
 
                     setTimeout(function() {
                         pollRemoteState();
-                    }, 2000);
+                    }, pollingInterval * 1000);
                 }).catch((err) => {
                     console.log(err);
                 });
@@ -315,6 +319,7 @@
                 trippedTone.src = config.tripped_tone_mp3_url;
                 alarmingTone.src = config.alarming_tone_mp3_url;
 
+                pollingInterval = config.web_ui_poll_interval;
                 armingToneDelay = config.arming_tone_interval;
                 trippedToneDelay = config.tripped_tone_interval;
                 alarmingToneDelay = config.alarming_tone_interval;
