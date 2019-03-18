@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const https = require('https');
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -89,6 +91,12 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
     }).bind(this));
 
     app.listen(this.webUiPort);
+
+    // const options = {
+    //     key: fs.readFileSync('test/fixtures/keys/agent2-key.pem'),
+    //     cert: fs.readFileSync('test/fixtures/keys/agent2-cert.cert')
+    // };
+    // https.createServer(options, app).listen(this.webUiPort);
 
     this.log("Started server for alarm-panel on port '%s'.", this.webUiPort);
 };
