@@ -33,6 +33,9 @@ function AlarmPanelPlatform(log, config) {
     this.armingToneMp3Url = config['arming_tone_mp3_url'] || 'assets/audio/buzz.mp3';
     this.trippedToneMp3Url = config['tripped_tone_mp3_url'] || 'assets/audio/buzz.mp3';
     this.alarmingToneMp3Url = config['alarming_tone_mp3_url'] || 'assets/audio/beep.mp3';
+
+    this.httpsKeyPath = config['https_key_path'];
+    this.httpsCertPath = config['https_cert_path'];
 }
 
 
@@ -90,15 +93,18 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
     }).bind(this));
 
-    app.listen(this.webUiPort);
-
-    // const options = {
-    //     key: fs.readFileSync('test/fixtures/keys/agent2-key.pem'),
-    //     cert: fs.readFileSync('test/fixtures/keys/agent2-cert.cert')
-    // };
-    // https.createServer(options, app).listen(this.webUiPort);
-
-    this.log("Started server for alarm-panel on port '%s'.", this.webUiPort);
+    if (this.httpsKeyPath && this.httpsCertPath) {
+        const options = {
+            key: fs.readFileSync(this.httpsKeyPath),
+            cert: fs.readFileSync(this.httpsCertPath)
+        };
+        https.createServer(options, app).listen(this.webUiPort);
+        this.log("Started HTTPS server for alarm-panel on port '%s'.", this.webUiPort);
+    }
+    else {
+        app.listen(this.webUiPort);
+        this.log("Started HTTP server for alarm-panel on port '%s'.", this.webUiPort);
+    }
 };
 
 

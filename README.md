@@ -42,7 +42,9 @@ Example `config.json` entry:
     "alarming_tone_interval": 1,
     "arming_tone_mp3_url": "assets/audio/buzz.mp3",
     "tripped_tone_mp3_url": "assets/audio/buzz.mp3",
-    "alarming_tone_mp3_url": "assets/audio/beep.mp3"
+    "alarming_tone_mp3_url": "assets/audio/beep.mp3",
+    "https_key_path": "/home/user/server.key",
+    "https_cert_path": "/home/user/server.cert"
   }
 ]
 ```
@@ -68,6 +70,9 @@ Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
 Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
 * `alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
 Defaults to an internally hosted relative URL of `assets/audio/beep.mp3`
+
+If both `https_key_path` and `https_cert_path` are configured to point at HTTPS key and cert files available on the Homebridge
+server the web UI will be hosted on HTTPS.
 
 ### Integration
 
