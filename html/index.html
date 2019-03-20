@@ -1,29 +1,29 @@
 <!DOCTYPE HTML>
 <html lang="en">
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
         <meta charset="utf-8">
         <meta name="author" content="vectronic">
         <title>Alarm Panel</title>
 
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
 
         <link rel="stylesheet" href="assets/css/main.css">
 
-        <link rel="apple-touch-icon" sizes="57x57" href="/assets/favicon/apple-icon-57x57.png">
-        <link rel="apple-touch-icon" sizes="60x60" href="/assets/favicon/apple-icon-60x60.png">
-        <link rel="apple-touch-icon" sizes="72x72" href="/assets/favicon/apple-icon-72x72.png">
-        <link rel="apple-touch-icon" sizes="76x76" href="/assets/favicon/apple-icon-76x76.png">
-        <link rel="apple-touch-icon" sizes="114x114" href="/assets/favicon/apple-icon-114x114.png">
-        <link rel="apple-touch-icon" sizes="120x120" href="/assets/favicon/apple-icon-120x120.png">
-        <link rel="apple-touch-icon" sizes="144x144" href="/assets/favicon/apple-icon-144x144.png">
-        <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-icon-152x152.png">
-        <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-icon-180x180.png">
-        <link rel="icon" type="image/png" sizes="192x192"  href="/assets/favicon/android-icon-192x192.png">
-        <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon/favicon-96x96.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
-        <link rel="manifest" href="/assets/favicon/manifest.json">
+        <link rel="apple-touch-icon" sizes="57x57" href="assets/favicon/apple-icon-57x57.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="assets/favicon/apple-icon-60x60.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="assets/favicon/apple-icon-72x72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="assets/favicon/apple-icon-76x76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="assets/favicon/apple-icon-114x114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="assets/favicon/apple-icon-120x120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="assets/favicon/apple-icon-144x144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="assets/favicon/apple-icon-152x152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-icon-180x180.png">
+        <link rel="icon" type="image/png" sizes="192x192"  href="assets/favicon/android-icon-192x192.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon/favicon-96x96.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+        <link rel="manifest" href="assets/favicon/manifest.json">
         <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml">
         <meta name="msapplication-TileColor" content="#ffffff">
         <meta name="msapplication-TileImage" content="/assets/favicon/ms-icon-144x144.png">
@@ -31,12 +31,12 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
         <meta name="apple-touch-fullscreen" content="yes">
-        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
     </head>
     <body>
 
-        <div id="mainDiv" class="d-flex flex-column vh-100 d-none fixed-top">
-            <input id="awayToggle" type="checkbox" data-toggle="toggle" data-on="Away" data-off="Home" data-onstyle="info" data-offstyle="default" data-width="100%" data-height="90%">
+        <div class="d-flex flex-column vh-100 d-none fixed-top">
+            <button id="homeButton" disabled type="button" class="btn btn-secondary vh-100 d-none vh-0">Home</button>
+            <button id="awayButton" disabled type="button" class="btn btn-primary vh-100 d-none vh-0">Away</button>
             <h1 class="mx-auto">
                 <span id="armingLabel" class="badge badge-pill badge-info d-none">Arming</span>
                 <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
@@ -59,14 +59,13 @@
 
         <script>
 
-            const stateUrl = 'api/state';
-            const configUrl = 'api/config';
+            const stateUrl = 'https://homebridge.chapatronic.net:8888/api/state';
+            const configUrl = 'https://homebridge.chapatronic.net:8888/api/config';
 
-            const mainDiv = document.getElementById('mainDiv');
-
+            const homeButton = document.getElementById('homeButton');
+            const awayButton = document.getElementById('awayButton');
             const connectButton = document.getElementById('connectButton');
 
-            const awayToggle = document.getElementById('awayToggle');
             const armingLabel = document.getElementById('armingLabel');
             const armedLabel = document.getElementById('armedLabel');
             const trippedLabel = document.getElementById('trippedLabel');
@@ -194,7 +193,11 @@
                     away: localAway
                 };
 
-                return makeRequest('POST', stateUrl, JSON.stringify(body)).then(() => {
+                return makeRequest('POST', stateUrl, JSON.stringify(body)).then((response) => {
+
+                    state = JSON.parse(response);
+
+                    renderLocalState();
 
                     // Re-enable handling of remote state polling
                     remoteUpdateInProgress = false;
@@ -224,12 +227,21 @@
 
 
             function renderLocalState() {
-
-                if (awayToggle.checked !== state.away) {
-                    awayToggle.checked = state.away;
-
-                    const awayToggleEvent = new Event('change');
-                    awayToggle.dispatchEvent(awayToggleEvent);
+                if (state.away) {
+                    homeButton.classList.add('d-none');
+                    homeButton.classList.add('vh-0');
+                    homeButton.disabled = true;
+                    awayButton.classList.remove('d-none');
+                    awayButton.classList.remove('vh-0');
+                    awayButton.disabled = false;
+                }
+                else {
+                    homeButton.classList.remove('d-none');
+                    homeButton.classList.remove('vh-0');
+                    homeButton.disabled = false;
+                    awayButton.classList.add('d-none');
+                    awayButton.classList.add('vh-0');
+                    awayButton.disabled = true;
                 }
 
                 if (state.away && !state.armed) {
@@ -285,9 +297,8 @@
             }
 
 
-            awayToggle.onchange = (event) => {
+            function handleLocalChange(localAway) {
 
-                const localAway = event.target.checked;
                 console.log(`local away: ${localAway}`);
 
                 if (localAway !== state.away) {
@@ -298,6 +309,16 @@
                     // Push the local away change to remote
                     setRemoteAwayState(localAway);
                 }
+            }
+
+
+            awayButton.onclick = () => {
+                handleLocalChange(false);
+            };
+
+
+            homeButton.onclick = () => {
+                handleLocalChange(true);
             };
 
 
@@ -314,8 +335,6 @@
                 connectButton.classList.add('d-none');
                 connectButton.classList.add('vh-0');
                 connectButton.disabled = true;
-
-                mainDiv.requestFullscreen();
 
                 pollRemoteState();
             };
