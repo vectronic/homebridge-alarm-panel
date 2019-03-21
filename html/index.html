@@ -7,11 +7,13 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
         <meta name="author" content="vectronic">
+
         <title>Alarm Panel</title>
 
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
         <link rel="stylesheet" href="assets/css/main.css">
 
+        <link rel="apple-touch-icon" href="assets/favicon/apple-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="57x57" href="assets/favicon/apple-icon-57x57.png">
         <link rel="apple-touch-icon" sizes="60x60" href="assets/favicon/apple-icon-60x60.png">
         <link rel="apple-touch-icon" sizes="72x72" href="assets/favicon/apple-icon-72x72.png">
@@ -26,30 +28,29 @@
         <link rel="icon" type="image/png" sizes="96x96" href="assets/favicon/favicon-96x96.png">
         <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
         <link rel="icon" type="image/x-icon" href="assets/favicon/favicon.ico">
-        <link rel="manifest" href="assets/favicon/manifest.json">
-        <meta name="msapplication-config" content="/assets/favicon/browserconfig.xml">
+        <meta name="msapplication-config" content="assets/favicon/browserconfig.xml">
         <meta name="msapplication-TileColor" content="#ffffff">
-        <meta name="msapplication-TileImage" content="/assets/favicon/ms-icon-144x144.png">
+        <meta name="msapplication-TileImage" content="assets/favicon/ms-icon-144x144.png">
     </head>
     <body>
 
         <div class="d-flex flex-column vh-100 d-none fixed-top">
-            <button id="homeButton" disabled type="button" class="btn btn-secondary vh-100 d-none vh-0">Home</button>
-            <button id="awayButton" disabled type="button" class="btn btn-primary vh-100 d-none vh-0">Away</button>
-            <h1 class="mx-auto">
+            <h1 id="labelContainer" class="mx-auto d-none ">
                 <span id="armingLabel" class="badge badge-pill badge-info d-none">Arming</span>
                 <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
                 <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
                 <span id="alarmingLabel" class="badge badge-pill badge-danger d-none">Alarming</span>
             </h1>
+            <button id="homeButton" disabled type="button" class="btn btn-secondary vh-100 d-none vh-0">Home</button>
+            <button id="awayButton" disabled type="button" class="btn btn-primary vh-100 d-none vh-0">Away</button>
         </div>
         <div class="d-flex flex-column fixed-top">
             <button id="connectButton" type="button" class="btn btn-success vh-100">Connect</button>
         </div>
 
-        <audio id="armingTone" src="assets/audio/buzz.mp3"></audio>
-        <audio id="trippedTone" src="assets/audio/buzz.mp3"></audio>
-        <audio id="alarmingTone" src="assets/audio/beep.mp3"></audio>
+        <audio id="armingTone" src="assets/audio/arming.mp3"></audio>
+        <audio id="trippedTone" src="assets/audio/tripped.mp3"></audio>
+        <audio id="alarmingTone" src="assets/audio/alarming.mp3"></audio>
 
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -63,6 +64,8 @@
             const homeButton = document.getElementById('homeButton');
             const awayButton = document.getElementById('awayButton');
             const connectButton = document.getElementById('connectButton');
+
+            const labelContainer = document.getElementById('labelContainer');
 
             const armingLabel = document.getElementById('armingLabel');
             const armedLabel = document.getElementById('armedLabel');
@@ -93,6 +96,7 @@
             let remoteUpdateInProgress = false;
 
 
+            // Each time arming tone ends playing, check if we should reschedule to play again based on current state
             armingTone.onended = () => {
                 if (state.away && !state.armed) {
                     armingToneTimeout = setTimeout(() => {
@@ -110,6 +114,7 @@
             };
 
 
+            // Each time tripped tone ends playing, check if we should reschedule to play again based on current state
             trippedTone.onended = () => {
                 if (state.tripped && !state.alarming) {
                     trippedToneTimeout = setTimeout(() => {
@@ -127,6 +132,7 @@
             };
 
 
+            // Each time alarming tone ends playing, check if we should reschedule to play again based on current state
             alarmingTone.onended = () => {
                 if (state.alarming) {
                     alarmingToneTimeout = setTimeout(() => {
@@ -144,6 +150,7 @@
             };
 
 
+            // Generic promise based XMLHttpRequest wrapper
             function makeRequest(method, url, body) {
                 return new Promise(function (resolve, reject) {
                     const xhr = new XMLHttpRequest();
@@ -155,8 +162,8 @@
                         }
                         else {
                             reject({
-                                status: this.status,
-                                statusText: xhr.statusText
+                            status: this.status,
+                            statusText: xhr.statusText
                             });
                         }
                     };
@@ -170,7 +177,7 @@
                 });
             }
 
-
+            // returns remote state from server
             function getRemoteState() {
                 return makeRequest('GET', stateUrl).then((response) => {
                     return JSON.parse(response);
@@ -178,6 +185,7 @@
             }
 
 
+            // returns remote config from server
             function getConfig() {
                 return makeRequest('GET', configUrl).then((response) => {
                     return JSON.parse(response);
@@ -185,6 +193,7 @@
             }
 
 
+            // update remote state after local state changed by input
             function setRemoteAwayState(localAway) {
 
                 const body = {
@@ -195,6 +204,7 @@
 
                     state = JSON.parse(response);
 
+                    // Render local state returned in update state response
                     renderLocalState();
 
                     // Re-enable handling of remote state polling
@@ -203,6 +213,7 @@
             }
 
 
+            // Start the arming tone if not already started
             function startArmingTone() {
                 if (armingToneTimeout == null) {
                     armingTone.play();
@@ -210,6 +221,7 @@
             }
 
 
+            // Start the tripped tone if not already started
             function startTrippedTone() {
                 if (trippedToneTimeout == null) {
                     trippedTone.play();
@@ -217,6 +229,7 @@
             }
 
 
+            // Start the alarming tone if not already started
             function startAlarmingTone() {
                 if (alarmingToneTimeout == null) {
                     alarmingTone.play();
@@ -224,6 +237,7 @@
             }
 
 
+            // Render the server state locally
             function renderLocalState() {
                 if (state.away) {
                     homeButton.classList.add('d-none');
@@ -232,6 +246,7 @@
                     awayButton.classList.remove('d-none');
                     awayButton.classList.remove('vh-0');
                     awayButton.disabled = false;
+                    labelContainer.classList.remove('d-none');
                 }
                 else {
                     homeButton.classList.remove('d-none');
@@ -240,6 +255,7 @@
                     awayButton.classList.add('d-none');
                     awayButton.classList.add('vh-0');
                     awayButton.disabled = true;
+                    labelContainer.classList.add('d-none');
                 }
 
                 if (state.away && !state.armed) {
@@ -275,6 +291,7 @@
             }
 
 
+            // Continually poll the remote state and update local rendering
             function pollRemoteState() {
 
                 getRemoteState().then((remoteState) => {
@@ -295,6 +312,7 @@
             }
 
 
+            // Respond to local manual state change
             function handleLocalChange(localAway) {
 
                 console.log(`local away: ${localAway}`);
@@ -310,16 +328,19 @@
             }
 
 
+            // Handle local manual away/home change
             awayButton.onclick = () => {
                 handleLocalChange(false);
             };
 
 
+            // Handle local manual away/home change
             homeButton.onclick = () => {
                 handleLocalChange(true);
             };
 
 
+            // Handle initial connect local manual change
             connectButton.onclick = () => {
 
                 // Starting playback via a user click event is required to unlock the browser security preventing programmatic playback later
@@ -337,6 +358,8 @@
                 pollRemoteState();
             };
 
+
+            // Start by loading the remote config
             getConfig().then((config) => {
                 armingTone.src = config.arming_tone_mp3_url;
                 trippedTone.src = config.tripped_tone_mp3_url;

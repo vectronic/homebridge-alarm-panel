@@ -30,9 +30,9 @@ function AlarmPanelPlatform(log, config) {
     this.armingToneInterval = config['arming_tone_interval'] || 3;
     this.trippedToneInterval = config['tripped_tone_interval'] || 1;
     this.alarmingToneInterval = config['alarming_tone_interval'] || 1;
-    this.armingToneMp3Url = config['arming_tone_mp3_url'] || 'assets/audio/buzz.mp3';
-    this.trippedToneMp3Url = config['tripped_tone_mp3_url'] || 'assets/audio/buzz.mp3';
-    this.alarmingToneMp3Url = config['alarming_tone_mp3_url'] || 'assets/audio/beep.mp3';
+    this.armingToneMp3Url = config['arming_tone_mp3_url'] || 'assets/audio/arming.mp3';
+    this.trippedToneMp3Url = config['tripped_tone_mp3_url'] || 'assets/audio/tripped.mp3';
+    this.alarmingToneMp3Url = config['alarming_tone_mp3_url'] || 'assets/audio/alarming.mp3';
 
     this.httpsKeyPath = config['https_key_path'];
     this.httpsCertPath = config['https_cert_path'];

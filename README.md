@@ -40,9 +40,9 @@ Example `config.json` entry:
     "arming_tone_interval": 3,
     "tripped_tone_interval": 2,
     "alarming_tone_interval": 1,
-    "arming_tone_mp3_url": "assets/audio/buzz.mp3",
-    "tripped_tone_mp3_url": "assets/audio/buzz.mp3",
-    "alarming_tone_mp3_url": "assets/audio/beep.mp3",
+    "arming_tone_mp3_url": "assets/audio/arming.mp3",
+    "tripped_tone_mp3_url": "assets/audio/tripped.mp3",
+    "alarming_tone_mp3_url": "assets/audio/alarming.mp3",
     "https_key_path": "/home/user/server.key",
     "https_cert_path": "/home/user/server.cert"
   }
@@ -65,11 +65,11 @@ Defaults to 1 seconds.
 * `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI. 
 Defaults to 1 seconds.
 * `arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
+Defaults to an internally hosted relative URL of `assets/audio/arming.mp3`
 * `tripped_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the tripped tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/buzz.mp3`
+Defaults to an internally hosted relative URL of `assets/audio/tripped.mp3`
 * `alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/beep.mp3`
+Defaults to an internally hosted relative URL of `assets/audio/alarming.mp3`
 
 If both `https_key_path` and `https_cert_path` are configured to point at HTTPS key and cert files available on the Homebridge
 server the web UI will be hosted on HTTPS.
@@ -169,4 +169,4 @@ This will return a response with content type `application/json` with the body c
 
 If you have a query or problem, raise an issue in GitHub, or better yet submit a PR!
 
-The web UI has been tested on an iPhone running Safari.
+The web UI has ONLY been tested on an iPhone running Safari.
