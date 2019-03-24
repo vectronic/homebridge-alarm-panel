@@ -11,18 +11,18 @@ Using on a spare mobile device which has been position near an entrance door it 
 The web UI provides:
  
 * home/away mode control
-* arming, armed, tripped and alerting states with visual and audio indication 
+* arming, armed, tripped and alerting states with visual and optional audible(*) indication 
 
+Audible indication via a Sonos speaker is also supported via [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api).
+ 
 You can use other HomeKit/Homebridge accessories and HomeKit automation to:
 
 * set the tripped state when any door or window is opened (e.g. via an entry detection accessory) if the alarm is armed.
 * alert you in the alarming state (e.g. via an SMS notification accessory such as 
 [homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)). 
 
-NOTE: The big caveat to the above is that your mobile device must stay awake if you wish the tripped state to
-be cause audible alerting on the web UI. I am currently investigating the ability to integrate with a separate audio 
-device (e.g. Sonos) via Homekit so that arming, tripped and alarming tones can be played regardless of the sleep state 
-on the device running the web UI.  
+`*` A caveat with audible alerting is that the mobile device must stay awake if you wish the tripped and alarming
+states to cause audible alerting on the web UI.
 
 ### Installation
 
@@ -41,14 +41,17 @@ Example `config.json` entry:
     "web_ui_port": "8888",
     "web_ui_poll_interval": 2,
     "web_ui_debug": false,
+    "web_ui_arming_tone_mp3_url": "assets/audio/arming.mp3",
+    "web_ui_tripped_tone_mp3_url": "assets/audio/tripped.mp3",
+    "web_ui_alarming_tone_mp3_url": "assets/audio/alarming.mp3",
+    "sonos_http_arming_tone_api_url": "http://127.0.0.1:5005/clipall/arming.mp3/50",
+    "sonos_http_tripped_tone_api_url": "http://127.0.0.1:5005/clipall/tripped.mp3/50",
+    "sonos_http_alarming_tone_api_url": "http://127.0.0.1:5005/clipall/alarming.mp3/50",
     "arm_delay": 30,
     "alarm_delay": 30,
     "arming_tone_interval": 3,
     "tripped_tone_interval": 2,
     "alarming_tone_interval": 1,
-    "arming_tone_mp3_url": "assets/audio/arming.mp3",
-    "tripped_tone_mp3_url": "assets/audio/tripped.mp3",
-    "alarming_tone_mp3_url": "assets/audio/alarming.mp3",
     "https_key_path": "/home/user/server.key",
     "https_cert_path": "/home/user/server.cert"
   }
@@ -65,18 +68,27 @@ Defaults to 2 seconds.
 Defaults to 30 seconds.
 * `alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on. 
 Defaults to 30 seconds.
-* `arming_tone_interval` is the interval in seconds between the arming tone being played in the web UI. 
+* `web_ui_arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
+By default this has no value and is therefore disabled.
+A usable mp3 is available at the internally hosted relative URL of `assets/audio/arming.mp3`
+* `web_ui_tripped_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the tripped tone in the web UI. 
+By default this has no value and is therefore disabled.
+A usable mp3 is available at the internally hosted relative URL of `assets/audio/tripped.mp3`
+* `web_ui_alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
+By default this has no value and is therefore disabled.
+A usable mp3 is available at the internally hosted relative URL of `assets/audio/alarming.mp3`
+* `sonos_http_arming_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below). 
+By default this has no value and is therefore disabled.
+* `sonos_http_tripped_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below).
+By default this has no value and is therefore disabled.
+* `sonos_http_alarming_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below). 
+By default this has no value and is therefore disabled.
+* `arming_tone_interval` is the interval in seconds between the arming tone being played in the web UI and/or Sonos HTTP API. 
 Defaults to 3 seconds.
-* `tripped_tone_interval` is the interval in seconds between the tripped tone being played in the web UI. 
+* `tripped_tone_interval` is the interval in seconds between the tripped tone being played in the web UI and/or Sonos HTTP API. 
 Defaults to 1 seconds.
-* `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI. 
+* `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI and/or Sonos HTTP API. 
 Defaults to 1 seconds.
-* `arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/arming.mp3`
-* `tripped_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the tripped tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/tripped.mp3`
-* `alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
-Defaults to an internally hosted relative URL of `assets/audio/alarming.mp3`
 
 If both `https_key_path` and `https_cert_path` are configured to point at HTTPS key and cert files available on the Homebridge
 server the web UI will be hosted on HTTPS.
@@ -98,6 +110,23 @@ switch being turned on and it is immediately turned off when the *Away* switch i
 configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on. Note that the accessory
 logic prevents this being set on or off manually. 
 
+#### Sonos Integration
+
+Audible alerts via Sonos are supported via the [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api) project. 
+
+Download and install the latest version and then copy mp3 files for arming, tripped and alarming tones into the
+ `static/clips` folder.
+ 
+Once started, it should be possible to test the URLs to play these clips using `curl`:
+
+    curl 'http://127.0.0.1:5005/reception/clip/alarming.mp3/80'
+
+Once this is working, simply configure the following properties in the Homebridge `config.json` for the AlarmPanel platform:
+
+* `sonos_http_arming_tone_api_url`
+* `sonos_http_tripped_tone_api_url`
+* `sonos_http_alarming_tone_api_url` 
+
 ### Usage
  
 1. Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
@@ -105,14 +134,19 @@ logic prevents this being set on or off manually.
 1. Tap on the "Home/Away" toggle button as you enter or leave the house.
 
 When the Home/Away button is toggled to away, the *Away* switch will be turned on. An audible alert will occur
+(if `web_ui_arming_tone_mp3_url` or `sonos_http_arming_tone_api_url` are configured)
 for the `arm_delay` time after which point the *Armed* switch will be turned on and the audible alert will stop.
 
-If the *Tripped* switch is turned on, an audible alert will occur until either:
+If the *Tripped* switch is turned on, an audible alert will occur 
+(if `web_ui_tripped_tone_mp3_url` or `sonos_http_tripped_tone_api_url` are configured)
+until either:
 
 * the Home/Away button is toggled to home causing the *Away* switch to be turned off.
-* the `alarm_delay` period expires causing the *Alarming* switch to be turned off.
+* the `alarm_delay` period expires causing the *Alarming* switch to be turned on.
 
-If the *Alarming* switch is turned on, an audible alert will occur until:
+If the *Alarming* switch is turned on, an audible alert will occur 
+(if `web_ui_alarming_tone_mp3_url` or `sonos_http_alarming_tone_api_url` are configured)
+until:
 
 * the Home/Away button is toggled to home causing the *Away* switch to be turned off.
 
@@ -164,12 +198,13 @@ This will return a response with content type `application/json` with the body c
 
     {
         "web_ui_poll_interval": 2,
+        "web_ui_debyg": false,
+        "web_ui_arming_tone_mp3_url": "assets/audio/buzz.mp3",
+        "web_ui_tripped_tone_mp3_url": "assets/audio/buzz.mp3",
+        "web_ui_alarming_tone_mp3_url": "assets/audio/beep.mp3",
         "arming_tone_interval": 3,
         "tripped_tone_interval": 1,
-        "alarming_tone_interval": 1,
-        "arming_tone_mp3_url": "assets/audio/buzz.mp3",
-        "tripped_tone_mp3_url": "assets/audio/buzz.mp3",
-        "alarming_tone_mp3_url": "assets/audio/beep.mp3"
+        "alarming_tone_interval": 1
     }
 
 ### Help etc.
