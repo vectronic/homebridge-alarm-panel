@@ -19,6 +19,11 @@ You can use other HomeKit/Homebridge accessories and HomeKit automation to:
 * alert you in the alarming state (e.g. via an SMS notification accessory such as 
 [homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)). 
 
+NOTE: The big caveat to the above is that your mobile device must stay awake if you wish the tripped state to
+be cause audible alerting on the web UI. I am currently investigating the ability to integrate with a separate audio 
+device (e.g. Sonos) via Homekit so that arming, tripped and alarming tones can be played regardless of the sleep state 
+on the device running the web UI.  
+
 ### Installation
 
 1. Install Homebridge using: `npm install -g homebridge`
@@ -35,6 +40,7 @@ Example `config.json` entry:
     "platform": "AlarmPanel",
     "web_ui_port": "8888",
     "web_ui_poll_interval": 2,
+    "web_ui_debug": false,
     "arm_delay": 30,
     "alarm_delay": 30,
     "arming_tone_interval": 3,
@@ -54,6 +60,7 @@ Where:
 * `web_ui_port` is the port that the HTML web UI and REST API are served from.
 * `web_ui_poll_interval` is the interval in seconds between requests from the web UI to Homebridge to get the current state.
 Defaults to 2 seconds.
+* `web_ui_debug` if true logs out information on the web UI for debugging, defaults to false.
 * `arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on. 
 Defaults to 30 seconds.
 * `alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on. 

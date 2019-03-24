@@ -25,8 +25,9 @@ function AlarmPanelPlatform(log, config) {
     this.config = config;
 
     this.webUiPort = config['web_ui_port'] || 8888;
-
     this.webUiPollInterval = config['web_ui_poll_interval'] || 2;
+    this.webUiDebug = config['web_ui_debug'];
+
     this.armingToneInterval = config['arming_tone_interval'] || 3;
     this.trippedToneInterval = config['tripped_tone_interval'] || 1;
     this.alarmingToneInterval = config['alarming_tone_interval'] || 1;
@@ -42,6 +43,7 @@ function AlarmPanelPlatform(log, config) {
 AlarmPanelPlatform.prototype.getWebUiConfig = function() {
     return {
         web_ui_poll_interval: this.webUiPollInterval,
+        web_ui_debug: this.webUiDebug,
         arming_tone_interval: this.armingToneInterval,
         tripped_tone_interval: this.trippedToneInterval,
         alarming_tone_interval: this.alarmingToneInterval,
@@ -68,12 +70,18 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
+
+        this.log(`get state: ${JSON.stringify(this.alarmPanelAccessory.getState())}`);
+
     }).bind(this));
 
     app.get('/api/config', (function(request, response) {
 
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify(this.getWebUiConfig()));
+
+        this.log(`get config: ${JSON.stringify(this.getWebUiConfig())}`);
+
     }).bind(this));
 
     app.post('/api/state', jsonParser, (function(request, response) {
@@ -91,6 +99,9 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
         response.writeHead(200, JSON_CONTENT);
         response.end(JSON.stringify(this.alarmPanelAccessory.getState()));
+
+        this.log(`set state: ${JSON.stringify(this.alarmPanelAccessory.getState())}`);
+
     }).bind(this));
 
     if (this.httpsKeyPath && this.httpsCertPath) {
@@ -179,7 +190,7 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
     // Clear timeout regardless
     if (this.armedTimeout) {
         clearTimeout(this.armedTimeout);
-        this.log('Armed timeout cleared...');
+        this.log('Old armed timeout cleared...');
     }
 
     if (away) {
@@ -204,10 +215,10 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         this.log('Armed timeout set...');
     }
     else {
-
         // Clear any alarming timeouts
         if (this.alarmingTimeout) {
             clearTimeout(this.alarmingTimeout);
+            this.log('Home: cleared existing timeout...');
         }
 
         // Clear armed, triggered and alarming states
