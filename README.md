@@ -5,7 +5,7 @@
 
 Provides a web UI alarm panel to view and manage a HomeKit based alarm system.
 
-Using on a spare mobile device which has been position near an entrance door it can act as a secure 
+Used on a spare mobile device which has been positioned near an entrance door, it can act as a secure 
 (fingerprint or passcode protected) alarm control panel.
 
 The web UI provides:
