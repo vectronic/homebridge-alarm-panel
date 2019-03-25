@@ -28,7 +28,7 @@ states to cause audible alerting on the web UI.
 
 1. Install Homebridge using: `npm install -g homebridge`
 1. Install this plugin using: `npm install -g homebridge-alarm-panel`
-1. Update your configuration file. See `sample-config.json` snippet below.
+1. Update your configuration file. See a sample `config.json` snippet below.
 
 ### Configuration
 
