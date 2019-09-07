@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const fs = require('fs');
 const https = require('https');
 const path = require('path');
@@ -118,6 +119,14 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
         this.log("Started HTTP server for alarm-panel on port '%s'.", this.webUiPort);
     }
 };
+
+
+function getContextMessage(context) {
+    if (_.isString(context)) {
+        return ` via context: ${context}`;
+    }
+    return '';
+}
 
 
 /**
@@ -264,13 +273,13 @@ AlarmPanelAccessory.prototype.getState = function() {
 
 
 AlarmPanelAccessory.prototype.getAway = function(callback, context) {
-    this.log(`Getting current value of Away: ${this.away} via context: ${context}`);
+    this.log(`Getting current value of Away: ${this.away}${getContextMessage(context)}`);
     callback(null, this.away);
 };
 
 
 AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
-    this.log(`Setting current value of Away to: ${away} via context: ${context}`);
+    this.log(`Setting current value of Away to: ${away}${getContextMessage(context)}`);
     this.away = away;
 
     // Clear timeout regardless
@@ -326,13 +335,13 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
 
 
 AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
-    this.log(`Getting current value of Armed: ${this.armed} via context: ${context}`);
+    this.log(`Getting current value of Armed: ${this.armed}${getContextMessage(context)}`);
     callback(null, this.armed);
 };
 
 
 AlarmPanelAccessory.prototype.setArmed = function(armed, callback, context) {
-    this.log(`Request to set current value of Armed to: ${armed} via context: ${context}`);
+    this.log(`Request to set current value of Armed to: ${armed}${getContextMessage(context)}`);
 
     if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
         this.log(`Invalid context for setting armed state, ignoring request to set armed to ${armed}...`);
@@ -346,13 +355,13 @@ AlarmPanelAccessory.prototype.setArmed = function(armed, callback, context) {
 
 
 AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
-    this.log(`Getting current value of Tripped: ${this.tripped} via context: ${context}`);
+    this.log(`Getting current value of Tripped: ${this.tripped}${getContextMessage(context)}`);
     callback(null, this.tripped);
 };
 
 
 AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) {
-    this.log(`Requested to set current value of Tripped to: ${tripped} via context: ${context}`);
+    this.log(`Requested to set current value of Tripped to: ${tripped}${getContextMessage(context)}`);
 
     if (tripped && !this.armed) {
         this.log('State is not armed, ignoring request to set tripped to true...');
@@ -404,13 +413,13 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
 
 
 AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
-    this.log(`Getting current value of Alarming: ${this.alarming} via context: ${context}`);
+    this.log(`Getting current value of Alarming: ${this.alarming}${getContextMessage(context)}`);
     callback(null, this.alarming);
 };
 
 
 AlarmPanelAccessory.prototype.setAlarming = function(alarming, callback, context) {
-    this.log(`Request to set current value of Alarming to: ${alarming} via context: ${context}`);
+    this.log(`Request to set current value of Alarming to: ${alarming}${getContextMessage(context)}`);
 
     if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
         this.log(`Invalid context for setting alarming state, ignoring request to set alarming to ${alarming}...`);
