@@ -162,20 +162,18 @@ function AlarmPanelAccessory(log, config) {
         .on('get', this.getAway.bind(this))
         .on('set', this.setAway.bind(this));
 
-    this.armedService = new Service.Switch('Armed', 'armed');
-    this.armedService.getCharacteristic(Characteristic.On)
-        .on('get', this.getArmed.bind(this))
-        .on('set', this.setArmed.bind(this));
+    this.armedService = new Service.ContactSensor('Armed', 'armed');
+    this.armedService.getCharacteristic(Characteristic.ContactSensorState)
+        .on('get', this.getArmed.bind(this));
 
     this.trippedService = new Service.Switch('Tripped', 'tripped');
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
         .on('set', this.setTripped.bind(this));
 
-    this.alarmingService = new Service.Switch('Alarming', 'alarming');
-    this.alarmingService.getCharacteristic(Characteristic.On)
-        .on('get', this.getAlarming.bind(this))
-        .on('set', this.setAlarming.bind(this));
+    this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
+    this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
+        .on('get', this.getAlarming.bind(this));
 
     this.accessoryInformationService = new Service.AccessoryInformation();
     this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
@@ -340,20 +338,6 @@ AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
 };
 
 
-AlarmPanelAccessory.prototype.setArmed = function(armed, callback, context) {
-    this.log(`Request to set current value of Armed to: ${armed}${getContextMessage(context)}`);
-
-    if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
-        this.log(`Invalid context for setting armed state, ignoring request to set armed to ${armed}...`);
-        callback('invalid context');
-        return;
-    }
-
-    this.armed = armed;
-    callback(null);
-};
-
-
 AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
     this.log(`Getting current value of Tripped: ${this.tripped}${getContextMessage(context)}`);
     callback(null, this.tripped);
@@ -415,20 +399,6 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
 AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
     this.log(`Getting current value of Alarming: ${this.alarming}${getContextMessage(context)}`);
     callback(null, this.alarming);
-};
-
-
-AlarmPanelAccessory.prototype.setAlarming = function(alarming, callback, context) {
-    this.log(`Request to set current value of Alarming to: ${alarming}${getContextMessage(context)}`);
-
-    if ((context !== TIMEOUT_CONTEXT) && (context !== LOGIC_CONTEXT)) {
-        this.log(`Invalid context for setting alarming state, ignoring request to set alarming to ${alarming}...`);
-        callback('invalid context');
-        return;
-    }
-
-    this.alarming = alarming;
-    callback(null);
 };
 
 

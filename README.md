@@ -98,17 +98,18 @@ server the web UI will be hosted on HTTPS.
 The platform provides one accessory with the following switch services:
 
 * *Away*: This can be manually turned on/off via the Home app or the alarm control panel web UI as you enter or leave the home.
-* *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
-switch being turned on and it is immediately turned off when the *Away* switch is turned off. Note that the accessory
-logic prevents this being set on or off manually.
 * *Tripped*: HomeKit automation should be configured to turn this on when entry is detected 
 (e.g. via an entry detection accessory). Note that the accessory logic ensures that setting the on state 
 ONLY takes effect if the *Armed* switch is on. The state can be set manually on (but not off) via the Home app, 
 however this is not the intended usage (apart from testing). 
+
+and contact services:
+
+* *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
+switch being turned on and it is immediately turned off when the *Away* switch is turned off.
 * *Alarming*: This is automatically managed by the plugin: It is turned on after `alarm_delay` seconds subsequent to the *Tripped* 
 switch being turned on and it is immediately turned off when the *Away* switch is turned off. HomeKit automation should be
-configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on. Note that the accessory
-logic prevents this being set on or off manually. 
+configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on.
 
 #### Sonos Integration
 
