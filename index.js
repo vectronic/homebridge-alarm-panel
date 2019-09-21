@@ -351,15 +351,17 @@ AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
 AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) {
     this.log(`Requested to set current value of Tripped to: ${tripped}${getContextMessage(context)}`);
 
-    if (tripped && !this.armed) {
+    // if newly tripped and not armed
+    if (!this.tripped && tripped && !this.armed) {
         this.log('State is not armed, ignoring request to set tripped to true...');
-        this.trippedService.getCharacteristic(Characteristic.On).setValue(false);
+        this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
         callback();
         return;
     }
+    // if newly not tripped and not logic based
     if (!tripped && (context !== LOGIC_CONTEXT)) {
         this.log(`Invalid context for setting tripped state, ignoring request to set tripped to false...`);
-        this.trippedService.getCharacteristic(Characteristic.On).setValue(true);
+        this.trippedService.getCharacteristic(Characteristic.On).setValue(true, undefined, LOGIC_CONTEXT);
         callback();
         return;
     }
