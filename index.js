@@ -365,7 +365,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
                 tripped = false;
-                this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
             }
         }
         // if untripped
@@ -384,7 +384,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
                 tripped = false;
-                this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
             }
             else {
                 // Set timeout to transition to alarming
@@ -402,7 +402,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                         this.log('Ignoring Alarming Timeout as Tripped is false!');
                     }
                     else {
-                        this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
+                        this.alarmingService.getCharacteristic(Characteristic.On).updateValue(true, undefined, TIMEOUT_CONTEXT);
                     }
                 }).bind(this), this.alarmDelay * 1000);
 
@@ -415,7 +415,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         else {
             this.log(`Ignoring request to manually set tripped to false...`);
             tripped = true;
-            this.trippedService.getCharacteristic(Characteristic.On).setValue(true, undefined, LOGIC_CONTEXT);
+            this.trippedService.getCharacteristic(Characteristic.On).updateValue(true, undefined, LOGIC_CONTEXT);
         }
     }
 
