@@ -170,7 +170,7 @@ function AlarmPanelAccessory(log, config) {
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
         .on('set', this.setTripped.bind(this));
-    this.trippedService.getCharacteristic(Characteristic.On).eventEnabled = true;
+    this.trippedService.getCharacteristic(Characteristic.On).ev = true;
 
     this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
     this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
@@ -365,9 +365,9 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         if (tripped) {
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
-                // tripped = false;
-                // callback();
-                // this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
+                tripped = false;
+                callback();
+                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
                 return;
             }
         }
@@ -386,9 +386,9 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         if (tripped) {
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
-                // tripped = false;
-                // callback();
-                // this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
+                tripped = false;
+                callback();
+                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, undefined, LOGIC_CONTEXT);
                 return;
             }
             else {
@@ -419,11 +419,11 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         // if untripped
         else {
             this.log(`Ignoring request to manually set tripped to false...`);
-            return;
-            // tripped = true;
-            // callback();
-            // this.trippedService.getCharacteristic(Characteristic.On).updateValue(true, undefined, LOGIC_CONTEXT);
             // return;
+            tripped = true;
+            callback();
+            this.trippedService.getCharacteristic(Characteristic.On).updateValue(true, undefined, LOGIC_CONTEXT);
+            return;
         }
     }
 
