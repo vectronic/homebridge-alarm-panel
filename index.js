@@ -170,6 +170,7 @@ function AlarmPanelAccessory(log, config) {
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
         .on('set', this.setTripped.bind(this));
+    this.trippedService.getCharacteristic(Characteristic.On).eventEnabled = true;
 
     this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
     this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
@@ -402,7 +403,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                         this.log('Ignoring Alarming Timeout as Tripped is false!');
                     }
                     else {
-                        this.alarmingService.getCharacteristic(Characteristic.On).updateValue(true, undefined, TIMEOUT_CONTEXT);
+                        this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
                     }
                 }).bind(this), this.alarmDelay * 1000);
 
