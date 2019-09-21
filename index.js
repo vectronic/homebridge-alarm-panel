@@ -169,8 +169,8 @@ function AlarmPanelAccessory(log, config) {
     this.trippedService = new Service.Switch('Tripped', 'tripped');
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
-        .on('set', this.setTripped.bind(this));
-    this.trippedService.getCharacteristic(Characteristic.On).ev = true;
+        .on('set', this.setTripped.bind(this))
+        .setProps({'ev': true});
 
     this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
     this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
