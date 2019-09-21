@@ -299,10 +299,10 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         this.armed = false;
         this.armedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
 
-        this.tripped = true;
+        this.tripped = false;
         this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
 
-        this.alarming = true;
+        this.alarming = false;
         this.alarmingService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
     }
 
@@ -364,6 +364,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         if (tripped) {
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
+                tripped = false;
                 this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
             }
         }
@@ -382,6 +383,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         if (tripped) {
             if (!this.armed) {
                 this.log('State is not armed, ignoring request to set tripped to true...');
+                tripped = false;
                 this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
             }
             else {
@@ -412,6 +414,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         // if untripped
         else {
             this.log(`Ignoring request to manually set tripped to false...`);
+            tripped = true;
             this.trippedService.getCharacteristic(Characteristic.On).setValue(true, undefined, LOGIC_CONTEXT);
         }
     }
