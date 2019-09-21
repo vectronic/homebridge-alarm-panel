@@ -278,28 +278,47 @@ AlarmPanelAccessory.prototype.getAway = function(callback, context) {
 
 AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
     this.log(`Setting current value of Away to: ${away}${getContextMessage(context)}`);
-    this.away = away;
 
-    // Clear timeout regardless
-    if (this.armedTimeout) {
-        clearTimeout(this.armedTimeout);
-        this.log('Old armed timeout cleared...');
+    // if newly no longer away
+    if (this.away && !away) {
+
+        // Clear any timeouts
+        if (this.armedTimeout) {
+            clearTimeout(this.armedTimeout);
+            this.log('Home: armed timeout cleared...');
+        }
+
+        // Clear any timeouts
+        if (this.alarmingTimeout) {
+            clearTimeout(this.alarmingTimeout);
+            this.log('Home: alarming timeout cleared...');
+        }
+
+        // Clear armed, triggered and alarming states
+
+        this.armed = false;
+        this.armedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+
+        this.tripped = true;
+        this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+
+        this.alarming = true;
+        this.alarmingService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
     }
 
-    if (away) {
+    // if newly away
+    else if (!this.away && away) {
 
         // Set timeout to transition to armed
         this.armedTimeout = setTimeout((function() {
             this.log('Armed timeout expired!');
 
-            // prevent race conditions - not sure if needed but feels safer
+            // prevent race conditions
             if (!this.away) {
                 this.log('Ignoring Armed Timeout as Away is false!');
             }
             else {
-                this.armedService
-                    .getCharacteristic(Characteristic.On)
-                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+                this.armedService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.armDelay * 1000);
 
@@ -308,27 +327,12 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         this.log('Armed timeout set...');
     }
     else {
-        // Clear any alarming timeouts
-        if (this.alarmingTimeout) {
-            clearTimeout(this.alarmingTimeout);
-            this.log('Home: cleared existing timeout...');
-        }
-
-        // Clear armed, triggered and alarming states
-        this.armed = false;
-        this.armedService
-            .getCharacteristic(Characteristic.On)
-            .setValue(false, undefined, LOGIC_CONTEXT);
-        this.tripped = true;
-        this.trippedService
-            .getCharacteristic(Characteristic.On)
-            .setValue(false, undefined, LOGIC_CONTEXT);
-        this.alarming = true;
-        this.alarmingService
-            .getCharacteristic(Characteristic.On)
-            .setValue(false, undefined, LOGIC_CONTEXT);
     }
-    callback(null);
+
+    // save state
+    this.away = away;
+
+    callback();
 };
 
 
@@ -349,23 +353,25 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
 
     if (tripped && !this.armed) {
         this.log('State is not armed, ignoring request to set tripped to true...');
-        callback('invalid state');
+        this.trippedService.getCharacteristic(Characteristic.On).setValue(false);
+        callback();
         return;
     }
     if (!tripped && (context !== LOGIC_CONTEXT)) {
-        this.log(`Invalid context for setting tripped state, ignoring request to set tripped to ${tripped}...`);
-        callback('invalid context');
+        this.log(`Invalid context for setting tripped state, ignoring request to set tripped to false...`);
+        this.trippedService.getCharacteristic(Characteristic.On).setValue(true);
+        callback();
         return;
     }
-    this.tripped = tripped;
 
-    // Clear timeout regardless
-    if (this.alarmingTimeout) {
+    // if no longer tripped
+    if (!tripped && this.alarmingTimeout) {
         clearTimeout(this.alarmingTimeout);
         this.log('Alarming timeout cleared...');
     }
 
-    if (tripped) {
+    // if newly tripped
+    if (!this.tripped && tripped) {
 
         // Set timeout to transition to alarming
         this.alarmingTimeout = setTimeout((function() {
@@ -382,9 +388,7 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                 this.log('Ignoring Alarming Timeout as Tripped is false!');
             }
             else {
-                this.alarmingService
-                    .getCharacteristic(Characteristic.On)
-                    .setValue(true, undefined, TIMEOUT_CONTEXT);
+                this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
             }
         }).bind(this), this.alarmDelay * 1000);
 
@@ -392,7 +396,11 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
         this.alarmingTimeout.unref();
         this.log('Alarming timeout set...');
     }
-    callback(null);
+
+    // save state
+    this.tripped = tripped;
+
+    callback();
 };
 
 
