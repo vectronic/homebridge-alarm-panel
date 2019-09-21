@@ -351,52 +351,69 @@ AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
 AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) {
     this.log(`Requested to set current value of Tripped to: ${tripped}${getContextMessage(context)}`);
 
-    // if newly tripped and not armed
-    if (!this.tripped && tripped && !this.armed) {
-        this.log('State is not armed, ignoring request to set tripped to true...');
-        this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
-        callback();
-        return;
-    }
-    // if newly not tripped and not logic based
-    if (!tripped && (context !== LOGIC_CONTEXT)) {
-        this.log(`Invalid context for setting tripped state, ignoring request to set tripped to false...`);
-        this.trippedService.getCharacteristic(Characteristic.On).setValue(true, undefined, LOGIC_CONTEXT);
+    // if no state change, nothing to do
+    if (this.tripped === tripped) {
         callback();
         return;
     }
 
-    // if no longer tripped
-    if (!tripped && this.alarmingTimeout) {
-        clearTimeout(this.alarmingTimeout);
-        this.log('Alarming timeout cleared...');
+    // if logic based
+    if (context === LOGIC_CONTEXT) {
+
+        // if tripped
+        if (tripped) {
+            if (!this.armed) {
+                this.log('State is not armed, ignoring request to set tripped to true...');
+                this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+            }
+        }
+        // if untripped
+        else {
+            if (this.alarmingTimeout) {
+                clearTimeout(this.alarmingTimeout);
+                this.log('Alarming timeout cleared...');
+            }
+        }
     }
+    // else if manual/automated
+    else {
 
-    // if newly tripped
-    if (!this.tripped && tripped) {
-
-        // Set timeout to transition to alarming
-        this.alarmingTimeout = setTimeout((function() {
-            this.log('Alarming timeout expired!');
-
-            // prevent race conditions - not sure if needed but feels safer
-            if (!this.away) {
-                this.log('Ignoring Alarming Timeout as Away is false!');
-            }
-            else if (!this.armed) {
-                this.log('Ignoring Alarming Timeout as Armed is false!');
-            }
-            else if (!this.tripped) {
-                this.log('Ignoring Alarming Timeout as Tripped is false!');
+        // if tripped
+        if (tripped) {
+            if (!this.armed) {
+                this.log('State is not armed, ignoring request to set tripped to true...');
+                this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
             }
             else {
-                this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
-            }
-        }).bind(this), this.alarmDelay * 1000);
+                // Set timeout to transition to alarming
+                this.alarmingTimeout = setTimeout((function() {
+                    this.log('Alarming timeout expired!');
 
-        // Do this to not prevent homebridge shutdown
-        this.alarmingTimeout.unref();
-        this.log('Alarming timeout set...');
+                    // prevent race conditions - not sure if needed but feels safer
+                    if (!this.away) {
+                        this.log('Ignoring Alarming Timeout as Away is false!');
+                    }
+                    else if (!this.armed) {
+                        this.log('Ignoring Alarming Timeout as Armed is false!');
+                    }
+                    else if (!this.tripped) {
+                        this.log('Ignoring Alarming Timeout as Tripped is false!');
+                    }
+                    else {
+                        this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
+                    }
+                }).bind(this), this.alarmDelay * 1000);
+
+                // Do this to not prevent homebridge shutdown
+                this.alarmingTimeout.unref();
+                this.log('Alarming timeout set...');
+            }
+        }
+        // if untripped
+        else {
+            this.log(`Ignoring request to manually set tripped to false...`);
+            this.trippedService.getCharacteristic(Characteristic.On).setValue(true, undefined, LOGIC_CONTEXT);
+        }
     }
 
     // save state
