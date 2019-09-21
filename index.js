@@ -388,7 +388,13 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                 this.log('State is not armed, ignoring request to set tripped to true...');
                 this.tripped = false;
                 callback();
-                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, null, LOGIC_CONTEXT);
+                this.ignoreTimeout = setTimeout((function() {
+                    this.log('Ignore state timeout expired!');
+
+                    this.trippedService.getCharacteristic(Characteristic.On).updateValue(false, null, LOGIC_CONTEXT);
+                }).bind(this), 1000);
+                this.ignoreTimeout.unref();
+                this.log('Ignore state timeout set...');
                 return;
             }
             else {
