@@ -1,6 +1,6 @@
 {
   "name": "homebridge-alarm-panel",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "A Homebridge plugin providing an alarm system with a web UI.",
   "main": "index.js",
   "repository": {
