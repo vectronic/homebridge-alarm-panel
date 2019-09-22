@@ -162,15 +162,14 @@ function AlarmPanelAccessory(log, config) {
         .on('get', this.getAway.bind(this))
         .on('set', this.setAway.bind(this));
 
-    this.armedService = new Service.ContactSensor('Armed', 'armed');
-    this.armedService.getCharacteristic(Characteristic.ContactSensorState)
-        .on('get', this.getArmed.bind(this));
-
     this.trippedService = new Service.Switch('Tripped', 'tripped');
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
-        .on('set', this.setTripped.bind(this))
-        .setProps({'ev': true});
+        .on('set', this.setTripped.bind(this));
+
+    this.armedService = new Service.ContactSensor('Armed', 'armed');
+    this.armedService.getCharacteristic(Characteristic.ContactSensorState)
+        .on('get', this.getArmed.bind(this));
 
     this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
     this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
@@ -273,7 +272,7 @@ AlarmPanelAccessory.prototype.getState = function() {
 
 AlarmPanelAccessory.prototype.getAway = function(callback, context) {
     this.log(`Getting current value of Away: ${this.away}${getContextMessage(context)}`);
-    callback(null, this.away);
+    callback(null, this.away ? 1 : 0);
 };
 
 
@@ -296,7 +295,8 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
                 this.log('Ignoring Armed Timeout as Away is false!');
             }
             else {
-                this.armedService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
+                this.armed = true;
+                this.armedService.getCharacteristic(Characteristic.ContactSensorState).updateValue(1);
             }
         }).bind(this), this.armDelay * 1000);
 
@@ -321,13 +321,12 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
         // Clear armed, triggered and alarming states
 
         this.armed = false;
-        this.armedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
-
         this.tripped = false;
-        this.trippedService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
-
         this.alarming = false;
-        this.alarmingService.getCharacteristic(Characteristic.On).setValue(false, undefined, LOGIC_CONTEXT);
+
+        this.armedService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        this.alarmingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        this.trippedService.getCharacteristic(Characteristic.On).updateValue(false);
     }
 
     // save state
@@ -339,7 +338,7 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
 
 AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
     this.log(`Getting current value of Armed: ${this.armed}${getContextMessage(context)}`);
-    callback(null, this.armed);
+    callback(null, this.armed ? 1 : 0);
 };
 
 
@@ -394,7 +393,8 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                 this.log('Ignoring Alarming Timeout as Tripped is false!');
             }
             else {
-                this.alarmingService.getCharacteristic(Characteristic.On).setValue(true, undefined, TIMEOUT_CONTEXT);
+                this.alarming = true;
+                this.alarmingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(1);
             }
         }).bind(this), this.alarmDelay * 1000);
 
