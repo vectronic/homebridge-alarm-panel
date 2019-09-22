@@ -272,7 +272,25 @@ AlarmPanelAccessory.prototype.getState = function() {
 
 AlarmPanelAccessory.prototype.getAway = function(callback, context) {
     this.log(`Getting current value of Away: ${this.away}${getContextMessage(context)}`);
-    callback(null, this.away ? 1 : 0);
+    callback(null, this.away);
+};
+
+
+AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
+    this.log(`Getting current value of Armed: ${this.armed}${getContextMessage(context)}`);
+    callback(null, this.armed ? 1 : 0);
+};
+
+
+AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
+    this.log(`Getting current value of Tripped: ${this.tripped}${getContextMessage(context)}`);
+    callback(null, this.tripped);
+};
+
+
+AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
+    this.log(`Getting current value of Alarming: ${this.alarming}${getContextMessage(context)}`);
+    callback(null, this.alarming ? 1 : 0);
 };
 
 
@@ -333,18 +351,6 @@ AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
     this.away = away;
 
     callback();
-};
-
-
-AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
-    this.log(`Getting current value of Armed: ${this.armed}${getContextMessage(context)}`);
-    callback(null, this.armed ? 1 : 0);
-};
-
-
-AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
-    this.log(`Getting current value of Tripped: ${this.tripped}${getContextMessage(context)}`);
-    callback(null, this.tripped);
 };
 
 
@@ -417,12 +423,6 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
     }
     this.tripped = tripped;
     callback();
-};
-
-
-AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
-    this.log(`Getting current value of Alarming: ${this.alarming}${getContextMessage(context)}`);
-    callback(null, this.alarming);
 };
 
 
