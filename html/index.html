@@ -176,7 +176,7 @@
             function makeRequest(method, url, body) {
                 return new Promise(function (resolve, reject) {
                     const xhr = new XMLHttpRequest();
-                    xhr.open(method, url);
+                    xhr.open(method, url + ((/\?/).test(url) ? "&" : "?") + (new Date()).getTime());
                     xhr.setRequestHeader('Content-Type', 'application/json');
                     xhr.onload = function () {
                         if (this.status >= 200 && this.status < 300) {
@@ -332,6 +332,12 @@
                     log('set timeout for pollRemoteState()');
                 }).catch((err) => {
                     log('getRemoteState() error', err);
+
+                    // try again...
+                    setTimeout(function() {
+                        pollRemoteState();
+                    }, pollingInterval * 1000);
+                    log('set timeout for pollRemoteState()');
                 });
             }
 
