@@ -183,6 +183,7 @@
                             resolve(xhr.response);
                         }
                         else {
+                            log(`xhr.onload error: ${this.status}, ${xhr.statusText}`);
                             reject({
                             status: this.status,
                             statusText: xhr.statusText
@@ -190,6 +191,7 @@
                         }
                     };
                     xhr.onerror = function () {
+                        log(`xhr.onerror error: ${this.status}, ${xhr.statusText}`);
                         reject({
                             status: this.status,
                             statusText: xhr.statusText
