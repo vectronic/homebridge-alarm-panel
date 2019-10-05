@@ -10,7 +10,6 @@ const bodyParser = require('body-parser');
 const serveStatic = require('serve-static');
 
 const WEB_UI_CONTEXT = 'ALARM_PANEL_WEB_UI';
-const TIMEOUT_CONTEXT = 'ALARM_PANEL_TIMEOUT';
 const LOGIC_CONTEXT = 'ALARM_PANEL_LOGIC';
 const JSON_CONTENT = {'Content-Type': 'application/json'};
 
