@@ -13,13 +13,13 @@ The web UI provides:
 * home/away mode control
 * arming, armed, tripped and alerting states with visual and optional audible(*) indication 
 
-Audible indication via a Sonos speaker is also supported via [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api).
+State indication is also supported via optional webhook support (see Sonos Integration below).
  
 You can use other HomeKit/Homebridge accessories and HomeKit automation to:
 
 * set the tripped state when any door or window is opened (e.g. via an entry detection accessory) if the alarm is armed.
-* alert you in the alarming state (e.g. via an SMS notification accessory such as 
-[homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)). 
+* enable a siren or send an alert (e.g. via an SMS notification accessory such as 
+[homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)) when in the alarming state. 
 
 `*` A caveat with audible alerting is that the mobile device must stay awake if you wish the tripped and alarming
 states to cause audible alerting on the web UI.
@@ -44,9 +44,9 @@ Example `config.json` entry:
     "web_ui_arming_tone_mp3_url": "assets/audio/arming.mp3",
     "web_ui_tripped_tone_mp3_url": "assets/audio/tripped.mp3",
     "web_ui_alarming_tone_mp3_url": "assets/audio/alarming.mp3",
-    "sonos_http_arming_tone_api_url": "http://127.0.0.1:5005/clipall/arming.mp3/50",
-    "sonos_http_tripped_tone_api_url": "http://127.0.0.1:5005/clipall/tripped.mp3/50",
-    "sonos_http_alarming_tone_api_url": "http://127.0.0.1:5005/clipall/alarming.mp3/50",
+    "arming_tone_webhook_url": "http://127.0.0.1:5005/clipall/arming.mp3/50",
+    "tripped_tone_webhook_url": "http://127.0.0.1:5005/clipall/tripped.mp3/50",
+    "alarming_tone_webhook_url": "http://127.0.0.1:5005/clipall/alarming.mp3/50",
     "arm_delay": 30,
     "alarm_delay": 30,
     "arming_tone_interval": 3,
@@ -63,31 +63,31 @@ Where:
 * `web_ui_port` is the port that the HTML web UI and REST API are served from.
 * `web_ui_poll_interval` is the interval in seconds between requests from the web UI to Homebridge to get the current state.
 Defaults to 2 seconds.
-* `web_ui_debug` if true logs out information on the web UI for debugging, defaults to false.
-* `arm_delay` is the delay in seconds after the *Away* switch is manually set on before the *Armed* switch is automatically set on. 
+* `web_ui_debug` if `true` logs out information on the web UI for debugging, defaults to `false`.
+* `arm_delay` is the delay in seconds after the *Away Arm* mode is set `on` before the *Away Armed* mode is automatically set `on`. 
 Defaults to 30 seconds.
-* `alarm_delay` is the delay in seconds after the *Tripped* switch is set on before the *Alarming* switch is automatically set on. 
+* `alarm_delay` is the delay in seconds after the *Tripped* state is set `on` before the *Alarming* state is automatically set `on`. 
 Defaults to 30 seconds.
-* `web_ui_arming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the arming tone in the web UI. 
+* `web_ui_arming_tone_mp3_url` is a relative or absolute HTTP URL to an MP3 audio file to be used for the arming tone in the web UI. 
 By default this has no value and is therefore disabled.
-A usable mp3 is available at the internally hosted relative URL of `assets/audio/arming.mp3`
-* `web_ui_tripped_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the tripped tone in the web UI. 
+A usable MP3 is available at the internally hosted relative URL of `assets/audio/arming.mp3`
+* `web_ui_tripped_tone_mp3_url` is a relative or absolute HTTP URL to an MP3 audio file to be used for the tripped tone in the web UI. 
 By default this has no value and is therefore disabled.
-A usable mp3 is available at the internally hosted relative URL of `assets/audio/tripped.mp3`
-* `web_ui_alarming_tone_mp3_url` is a relative or absolute HTTP URL to a mp3 audio file to be used for the alarming tone in the web UI. 
+A usable MP3 is available at the internally hosted relative URL of `assets/audio/tripped.mp3`
+* `web_ui_alarming_tone_mp3_url` is a relative or absolute HTTP URL to an MP3 audio file to be used for the alarming tone in the web UI. 
 By default this has no value and is therefore disabled.
-A usable mp3 is available at the internally hosted relative URL of `assets/audio/alarming.mp3`
-* `sonos_http_arming_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below). 
+A usable MP3 is available at the internally hosted relative URL of `assets/audio/alarming.mp3`
+* `arming_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below). 
 By default this has no value and is therefore disabled.
-* `sonos_http_tripped_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below).
+* `tripped_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below).
 By default this has no value and is therefore disabled.
-* `sonos_http_alarming_tone_api_url` is an HTTP URL to request an arming clip playback via a node-sonos-http-api instance (see Sonos Integration below). 
+* `alarming_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below). 
 By default this has no value and is therefore disabled.
-* `arming_tone_interval` is the interval in seconds between the arming tone being played in the web UI and/or Sonos HTTP API. 
+* `arming_tone_interval` is the interval in seconds between repeated playback of the arming tone in the web UI and/or via the webhook. 
 Defaults to 3 seconds.
-* `tripped_tone_interval` is the interval in seconds between the tripped tone being played in the web UI and/or Sonos HTTP API. 
+* `tripped_tone_interval` is the interval in seconds between repeated playback of the tripped tone in the web UI and/or via the webhook. 
 Defaults to 1 seconds.
-* `alarming_tone_interval` is the interval in seconds between the alarming tone being played in the web UI and/or Sonos HTTP API. 
+* `alarming_tone_interval` is the interval in seconds between repeated playback of the alarming tone in the web UI and/or via the webhook. 
 Defaults to 1 seconds.
 
 If both `https_key_path` and `https_cert_path` are configured to point at HTTPS key and cert files available on the Homebridge
@@ -113,9 +113,9 @@ configured so that an alert is sent (e.g. via an SMS notification accessory) whe
 
 #### Sonos Integration
 
-Audible alerts via Sonos are supported via the [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api) project. 
+The webhook support allows audible alerts on a Sonos speaker system via the [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api) project. 
 
-Download and install the latest version and then copy mp3 files for arming, tripped and alarming tones into the
+Download and install the latest version and then copy MP3 files for arming, tripped and alarming tones into the
  `static/clips` folder.
  
 Once started, it should be possible to test the URLs to play these clips using `curl`:
@@ -124,9 +124,9 @@ Once started, it should be possible to test the URLs to play these clips using `
 
 Once this is working, simply configure the following properties in the Homebridge `config.json` for the AlarmPanel platform:
 
-* `sonos_http_arming_tone_api_url`
-* `sonos_http_tripped_tone_api_url`
-* `sonos_http_alarming_tone_api_url` 
+* `arming_tone_webhook_url`
+* `tripped_tone_webhook_url`
+* `alarming_tone_webhook_url` 
 
 ### Usage
  
@@ -134,22 +134,22 @@ Once this is working, simply configure the following properties in the Homebridg
 1. Tap on the "Connect" button (this is required to provide permission to the browser for programmatic control of the web audio playback).
 1. Tap on the "Home/Away" toggle button as you enter or leave the house.
 
-When the Home/Away button is toggled to away, the *Away* switch will be turned on. An audible alert will occur
-(if `web_ui_arming_tone_mp3_url` or `sonos_http_arming_tone_api_url` are configured)
-for the `arm_delay` time after which point the *Armed* switch will be turned on and the audible alert will stop.
+When the Home/Away button is toggled to away, the *Away* switch will be turned `on`. An audible alert will occur
+(if `web_ui_arming_tone_mp3_url` or `arming_tone_webhook_url` are configured)
+for the `arm_delay` time after which point the *Armed* switch will be turned `on` and the audible alert will stop.
 
-If the *Tripped* switch is turned on, an audible alert will occur 
-(if `web_ui_tripped_tone_mp3_url` or `sonos_http_tripped_tone_api_url` are configured)
+If the *Tripped* switch is turned `on`, an audible alert will occur 
+(if `web_ui_tripped_tone_mp3_url` or `tripped_tone_webhook_url` are configured)
 until either:
 
-* the Home/Away button is toggled to home causing the *Away* switch to be turned off.
-* the `alarm_delay` period expires causing the *Alarming* switch to be turned on.
+* the Home/Away button is toggled to home causing the *Away* switch to be turned `off`.
+* the `alarm_delay` period expires causing the *Alarming* switch to be turned `on`.
 
-If the *Alarming* switch is turned on, an audible alert will occur 
-(if `web_ui_alarming_tone_mp3_url` or `sonos_http_alarming_tone_api_url` are configured)
+If the *Alarming* switch is turned `on`, an audible alert will occur 
+(if `web_ui_alarming_tone_mp3_url` or `alarming_tone_webhook_url` are configured)
 until:
 
-* the Home/Away button is toggled to home causing the *Away* switch to be turned off.
+* the Home/Away button is toggled to home causing the *Away* switch to be turned `off`.
 
 NOTE: If Homebridge is restarted the alarm panel state will reset.
 
@@ -197,9 +197,9 @@ The web UI specific config can be obtained by performing the following GET reque
 
 This will return a response with content type `application/json` with the body content in the form:
 
-    {
+    {   
         "web_ui_poll_interval": 2,
-        "web_ui_debyg": false,
+        "web_ui_debug": false,
         "web_ui_arming_tone_mp3_url": "assets/audio/buzz.mp3",
         "web_ui_tripped_tone_mp3_url": "assets/audio/buzz.mp3",
         "web_ui_alarming_tone_mp3_url": "assets/audio/beep.mp3",

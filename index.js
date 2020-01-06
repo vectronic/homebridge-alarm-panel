@@ -149,9 +149,9 @@ function AlarmPanelAccessory(log, config) {
     this.armedTimeout = null;
     this.alarmingTimeout = null;
 
-    this.sonos_http_arming_tone_api_url = config['sonos_http_arming_tone_api_url'];
-    this.sonos_http_tripped_tone_api_url = config['sonos_http_tripped_tone_api_url'];
-    this.sonos_http_alarming_tone_api_url = config['sonos_http_alarming_tone_api_url'];
+    this.arming_tone_webhook_url = config['arming_tone_webhook_url'] || config['sonos_http_arming_tone_api_url'];
+    this.tripped_tone_webhook_url = config['tripped_tone_webhook_url'] || config['sonos_http_tripped_tone_api_url'];
+    this.alarming_tone_webhook_url = config['alarming_tone_webhook_url'] || config['sonos_http_alarming_tone_api_url'];
     this.armingToneInterval = config['arming_tone_interval'] || 3;
     this.trippedToneInterval = config['tripped_tone_interval'] || 1;
     this.alarmingToneInterval = config['alarming_tone_interval'] || 1;
@@ -178,15 +178,15 @@ function AlarmPanelAccessory(log, config) {
     this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
     this.accessoryInformationService.setCharacteristic(Characteristic.Model, "Alarm Panel");
 
-    if (this.sonos_http_arming_tone_api_url !== undefined) {
+    if (this.arming_tone_webhook_url !== undefined) {
         this.startArmingToneStateTimeout();
     }
 
-    if (this.sonos_http_tripped_tone_api_url !== undefined) {
+    if (this.tripped_tone_webhook_url !== undefined) {
         this.startTrippedToneStateTimeout();
     }
 
-    if (this.sonos_http_alarming_tone_api_url !== undefined) {
+    if (this.alarming_tone_webhook_url !== undefined) {
         this.startAlarmingToneStateTimeout();
     }
 }
@@ -198,7 +198,7 @@ AlarmPanelAccessory.prototype.startArmingToneStateTimeout = function() {
 
         if (this.away && !this.armed && !this.alarming) {
             const that = this;
-            request(this.sonos_http_arming_tone_api_url, function (error) {
+            request(this.arming_tone_webhook_url, function (error) {
                 if (error) {
                     this.log(`armingToneTimeout: ${error}`)
                 }
@@ -220,7 +220,7 @@ AlarmPanelAccessory.prototype.startTrippedToneStateTimeout = function() {
 
         if (this.away && this.tripped && !this.alarming) {
             const that = this;
-            request(this.sonos_http_tripped_tone_api_url, function (error) {
+            request(this.tripped_tone_webhook_url, function (error) {
                 if (error) {
                     this.log(`trippedToneTimeout: ${error}`)
                 }
@@ -242,7 +242,7 @@ AlarmPanelAccessory.prototype.startAlarmingToneStateTimeout = function() {
 
         if (this.away && this.tripped && this.alarming) {
             const that = this;
-            request(this.sonos_http_alarming_tone_api_url, function (error) {
+            request(this.alarming_tone_webhook_url, function (error) {
                 if (error) {
                     this.log(`alarmingToneTimeout: ${error}`)
                 }
