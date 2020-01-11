@@ -214,8 +214,8 @@ function AlarmPanelAccessory(log, config) {
 
     this.current = CURRENT_DISARMED;
     this.target = TARGET_DISARM;
-    this.tripped = false;
     this.arming = false;
+    this.tripped = false;
 
     this.awayArmedTimeout = null;
     this.alarmingTimeout = null;
@@ -232,7 +232,7 @@ function AlarmPanelAccessory(log, config) {
         .on('get', this.getTarget.bind(this))
         .on('set', this.setTarget.bind(this));
 
-    this.service
+    this.securitySystemService
         .getCharacteristic(Characteristic.SecuritySystemCurrentState)
         .on('get', this.getCurrent.bind(this));
 
@@ -332,8 +332,8 @@ AlarmPanelAccessory.prototype.startAlarmingToneStateTimeout = function() {
 AlarmPanelAccessory.prototype.getState = function() {
 
     return {
-        currentState: this.currentState,
-        targetState: this.targetState,
+        currentState: this.current,
+        targetState: this.target,
         arming: this.arming,
         tripped: this.tripped
     };
@@ -377,17 +377,24 @@ AlarmPanelAccessory.prototype.setTarget = function(target, callback, context) {
     }
 
     if (target === TARGET_AWAY_ARM) {
+
+        this.arming = true;
+        this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(1);
+
         // Set timeout to transition to away armed
         this.awayArmedTimeout = setTimeout((function() {
             this.log('Away armed timeout expired!');
 
             // prevent race conditions
-            if (target !== TARGET_AWAY_ARM) {
+            if (this.target !== TARGET_AWAY_ARM) {
                 this.log('Ignoring Away Armed Timeout as target is not TARGET_AWAY_ARM!');
             }
             else {
                 this.current = CURRENT_AWAY_ARMED;
-                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_AWAY_ARMED));
+                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState)
+                    .updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_AWAY_ARMED));
+                this.arming = false;
+                this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
             }
         }).bind(this), this.awayArmDelay * 1000);
 
@@ -397,11 +404,25 @@ AlarmPanelAccessory.prototype.setTarget = function(target, callback, context) {
     }
     else if (target === TARGET_HOME_ARM) {
         this.current = CURRENT_HOME_ARMED;
-        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_HOME_ARMED));
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_HOME_ARMED));
+        this.arming = false;
+        this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        if (this.awayArmedTimeout) {
+            clearTimeout(this.awayArmedTimeout);
+            this.log('Disarm: away armed timeout cleared...');
+        }
     }
     else if (target === TARGET_NIGHT_ARM) {
         this.current = CURRENT_NIGHT_ARMED;
-        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_NIGHT_ARMED));
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_NIGHT_ARMED));
+        this.arming = false;
+        this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        if (this.awayArmedTimeout) {
+            clearTimeout(this.awayArmedTimeout);
+            this.log('Disarm: away armed timeout cleared...');
+        }
     }
     else {
         // Clear any timeouts
@@ -420,11 +441,12 @@ AlarmPanelAccessory.prototype.setTarget = function(target, callback, context) {
 
         this.target = TARGET_DISARM;
         this.current = CURRENT_DISARMED;
-        this.tripped = false;
         this.arming = false;
+        this.tripped = false;
 
-        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_DISARMED));
-        this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState)
+            .updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_DISARMED));
+        this.armingService.getCharacteristic(Characteristic.ContactSensorState).setValue(0);
         this.trippedService.getCharacteristic(Characteristic.On).updateValue(false);
     }
 
@@ -438,8 +460,7 @@ AlarmPanelAccessory.prototype.setTarget = function(target, callback, context) {
 AlarmPanelAccessory.prototype.rejectTripped = function(tripped) {
 
     this.ignoreTimeout = setTimeout((function() {
-        this.log('Ignore state timeout expired!');
-
+        this.log(`Ignore state timeout expired! Updating tripped service to: ${tripped}`);
         this.trippedService.getCharacteristic(Characteristic.On).updateValue(tripped, null, LOGIC_CONTEXT);
     }).bind(this), 500);
     this.ignoreTimeout.unref();
@@ -483,7 +504,8 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
                 this.tripped = false;
                 this.current = CURRENT_ALARM_TRIGGERED;
                 this.trippedService.getCharacteristic(Characteristic.On).updateValue(false);
-                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_ALARM_TRIGGERED));
+                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState)
+                    .updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_ALARM_TRIGGERED));
             }
         }).bind(this), this.alarmDelay * 1000);
 
