@@ -16,6 +16,18 @@ const JSON_CONTENT = {'Content-Type': 'application/json'};
 let Service;
 let Characteristic;
 
+const TARGET_AWAY_ARM = "TARGET_AWAY_ARM";
+const TARGET_HOME_ARM = "TARGET_HOME_ARM";
+const TARGET_NIGHT_ARM = "TARGET_NIGHT_ARM";
+const TARGET_DISARM = "TARGET_DISARM";
+
+const CURRENT_AWAY_ARMED = "CURRENT_AWAY_ARMED";
+const CURRENT_HOME_ARMED = "CURRENT_HOME_ARMED";
+const CURRENT_NIGHT_ARMED = "CURRENT_NIGHT_ARMED";
+const CURRENT_DISARMED = "CURRENT_DISARMED";
+const CURRENT_ALARM_TRIGGERED = "CURRENT_ALARM_TRIGGERED";
+
+
 /**
  * Platform "AlarmPanel"
  */
@@ -87,15 +99,14 @@ AlarmPanelPlatform.prototype.accessories = function(callback) {
 
     app.post('/api/state', jsonParser, (function(request, response) {
 
-        let currentAwayState = this.alarmPanelAccessory.away;
+        let previousTargetState = this.alarmPanelAccessory.targetState;
+        const newTargetState = request.body.targetState;
+        this.log(`previousTargetState: ${previousTargetState} => newTargetState: ${newTargetState}`);
 
-        const newAwayState = request.body.away;
-        this.log(`currentAwayState: ${currentAwayState} => newAwayState: ${newAwayState}`);
-
-        if (currentAwayState !== newAwayState) {
-            this.alarmPanelAccessory.awayService
-                .getCharacteristic(Characteristic.On)
-                .setValue(newAwayState, undefined, WEB_UI_CONTEXT);
+        if (previousTargetState !== newTargetState) {
+            this.alarmPanelAccessory.securitySystemService
+                .getCharacteristic(Characteristic.SecuritySystemTargetState)
+                .setValue(getHomekitTargetStateFromLocalTargetState(newTargetState), undefined, WEB_UI_CONTEXT);
         }
 
         response.writeHead(200, JSON_CONTENT);
@@ -128,6 +139,66 @@ function getContextMessage(context) {
 }
 
 
+function getLocalCurrentStateFromHomekitCurrentState(homekitCurrentState) {
+    switch (homekitCurrentState) {
+        case Characteristic.SecuritySystemCurrentState.AWAY_ARM:
+            return CURRENT_AWAY_ARMED;
+        case Characteristic.SecuritySystemCurrentState.STAY_ARM:
+            return CURRENT_HOME_ARMED;
+        case Characteristic.SecuritySystemCurrentState.NIGHT_ARM:
+            return CURRENT_NIGHT_ARMED;
+        case Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED:
+            return CURRENT_ALARM_TRIGGERED;
+        default:
+            return CURRENT_DISARMED;
+    }
+}
+
+
+function getLocalTargetStateFromHomekitTargetState(homekitTargetState) {
+    switch (homekitTargetState) {
+        case Characteristic.SecuritySystemTargetState.AWAY_ARM:
+            return TARGET_AWAY_ARM;
+        case Characteristic.SecuritySystemTargetState.STAY_ARM:
+            return TARGET_HOME_ARM;
+        case Characteristic.SecuritySystemTargetState.NIGHT_ARM:
+            return TARGET_NIGHT_ARM;
+        default:
+            return TARGET_DISARM;
+    }
+}
+
+
+function getHomekitCurrentStateFromLocalCurrentState(localCurrentState) {
+    switch (localCurrentState) {
+        case CURRENT_AWAY_ARMED:
+            return Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+        case CURRENT_HOME_ARMED:
+            return Characteristic.SecuritySystemCurrentState.STAY_ARM;
+        case CURRENT_NIGHT_ARMED:
+            return Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+        case CURRENT_ALARM_TRIGGERED:
+            return Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED;
+        default:
+            return Characteristic.SecuritySystemCurrentState.DISARMED;
+    }
+}
+
+
+function getHomekitTargetStateFromLocalTargetState(localTargetState) {
+    switch (localTargetState) {
+        case TARGET_AWAY_ARM:
+            return Characteristic.SecuritySystemTargetState.AWAY_ARM;
+        case TARGET_HOME_ARM:
+            return Characteristic.SecuritySystemTargetState.STAY_ARM;
+        case TARGET_NIGHT_ARM:
+            return Characteristic.SecuritySystemTargetState.NIGHT_ARM;
+        default:
+            return Characteristic.SecuritySystemTargetState.DISARM;
+    }
+}
+
+
 /**
  * Accessory "AlarmPanel"
  */
@@ -138,15 +209,15 @@ function AlarmPanelAccessory(log, config) {
 
     this.name = 'Alarm Panel';
 
-    this.armDelay = config.arm_delay || 30;
+    this.awayArmDelay = config.away_arm_delay || 30;
     this.alarmDelay = config.alarm_delay || 30;
 
-    this.away = false;
-    this.armed = false;
+    this.current = CURRENT_DISARMED;
+    this.target = TARGET_DISARM;
     this.tripped = false;
-    this.alarming = false;
+    this.arming = false;
 
-    this.armedTimeout = null;
+    this.awayArmedTimeout = null;
     this.alarmingTimeout = null;
 
     this.arming_tone_webhook_url = config['arming_tone_webhook_url'] || config['sonos_http_arming_tone_api_url'];
@@ -156,23 +227,23 @@ function AlarmPanelAccessory(log, config) {
     this.trippedToneInterval = config['tripped_tone_interval'] || 1;
     this.alarmingToneInterval = config['alarming_tone_interval'] || 1;
 
-    this.awayService = new Service.Switch('Away', 'away');
-    this.awayService.getCharacteristic(Characteristic.On)
-        .on('get', this.getAway.bind(this))
-        .on('set', this.setAway.bind(this));
+    this.securitySystemService = new Service.SecuritySystem('Alarm System', 'alarm');
+    this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemTargetState)
+        .on('get', this.getTarget.bind(this))
+        .on('set', this.setTarget.bind(this));
+
+    this.service
+        .getCharacteristic(Characteristic.SecuritySystemCurrentState)
+        .on('get', this.getCurrent.bind(this));
 
     this.trippedService = new Service.Switch('Tripped', 'tripped');
     this.trippedService.getCharacteristic(Characteristic.On)
         .on('get', this.getTripped.bind(this))
         .on('set', this.setTripped.bind(this));
 
-    this.armedService = new Service.ContactSensor('Armed', 'armed');
-    this.armedService.getCharacteristic(Characteristic.ContactSensorState)
-        .on('get', this.getArmed.bind(this));
-
-    this.alarmingService = new Service.ContactSensor('Alarming', 'alarming');
-    this.alarmingService.getCharacteristic(Characteristic.ContactSensorState)
-        .on('get', this.getAlarming.bind(this));
+    this.armingService = new Service.ContactSensor('Arming', 'arming');
+    this.armingService.getCharacteristic(Characteristic.ContactSensorState)
+        .on('get', this.getArming.bind(this));
 
     this.accessoryInformationService = new Service.AccessoryInformation();
     this.accessoryInformationService.setCharacteristic(Characteristic.Manufacturer, "vectronic");
@@ -196,7 +267,7 @@ AlarmPanelAccessory.prototype.startArmingToneStateTimeout = function() {
 
     this.armingToneTimeout = setTimeout((function() {
 
-        if (this.away && !this.armed && !this.alarming) {
+        if (this.arming) {
             const that = this;
             request(this.arming_tone_webhook_url, function (error) {
                 if (error) {
@@ -218,7 +289,7 @@ AlarmPanelAccessory.prototype.startTrippedToneStateTimeout = function() {
 
     this.trippedToneTimeout = setTimeout((function() {
 
-        if (this.away && this.tripped && !this.alarming) {
+        if (this.tripped) {
             const that = this;
             request(this.tripped_tone_webhook_url, function (error) {
                 if (error) {
@@ -240,7 +311,7 @@ AlarmPanelAccessory.prototype.startAlarmingToneStateTimeout = function() {
 
     this.alarmingToneTimeout = setTimeout((function() {
 
-        if (this.away && this.tripped && this.alarming) {
+        if (this.current === CURRENT_ALARM_TRIGGERED) {
             const that = this;
             request(this.alarming_tone_webhook_url, function (error) {
                 if (error) {
@@ -261,23 +332,23 @@ AlarmPanelAccessory.prototype.startAlarmingToneStateTimeout = function() {
 AlarmPanelAccessory.prototype.getState = function() {
 
     return {
-        away: this.away,
-        armed: this.armed,
-        tripped: this.tripped,
-        alarming: this.alarming
+        currentState: this.currentState,
+        targetState: this.targetState,
+        arming: this.arming,
+        tripped: this.tripped
     };
 };
 
 
-AlarmPanelAccessory.prototype.getAway = function(callback, context) {
-    this.log(`Getting current value of Away: ${this.away}${getContextMessage(context)}`);
-    callback(null, this.away);
+AlarmPanelAccessory.prototype.getCurrent = function(callback, context) {
+    this.log(`Getting current state: ${this.current}${getContextMessage(context)}`);
+    callback(null, getHomekitCurrentStateFromLocalCurrentState(this.current));
 };
 
 
-AlarmPanelAccessory.prototype.getArmed = function(callback, context) {
-    this.log(`Getting current value of Armed: ${this.armed}${getContextMessage(context)}`);
-    callback(null, this.armed ? 1 : 0);
+AlarmPanelAccessory.prototype.getTarget = function(callback, context) {
+    this.log(`Getting target state: ${this.target}${getContextMessage(context)}`);
+    callback(null, getHomekitTargetStateFromLocalTargetState(this.target));
 };
 
 
@@ -287,67 +358,78 @@ AlarmPanelAccessory.prototype.getTripped = function(callback, context) {
 };
 
 
-AlarmPanelAccessory.prototype.getAlarming = function(callback, context) {
-    this.log(`Getting current value of Alarming: ${this.alarming}${getContextMessage(context)}`);
-    callback(null, this.alarming ? 1 : 0);
+AlarmPanelAccessory.prototype.getArming = function(callback, context) {
+    this.log(`Getting current value of Arming: ${this.arming}${getContextMessage(context)}`);
+    callback(null, this.arming ? 1 : 0);
 };
 
 
-AlarmPanelAccessory.prototype.setAway = function(away, callback, context) {
-    this.log(`Setting current value of Away to: ${away}${getContextMessage(context)}`);
+AlarmPanelAccessory.prototype.setTarget = function(target, callback, context) {
+
+    target = getLocalTargetStateFromHomekitTargetState(target);
+
+    this.log(`Setting target state to: ${target}${getContextMessage(context)}`);
 
     // if no state change, nothing to do
-    if (this.away === away) {
+    if (this.target === target) {
         callback();
         return;
     }
 
-    if (away) {
-        // Set timeout to transition to armed
-        this.armedTimeout = setTimeout((function() {
-            this.log('Armed timeout expired!');
+    if (target === TARGET_AWAY_ARM) {
+        // Set timeout to transition to away armed
+        this.awayArmedTimeout = setTimeout((function() {
+            this.log('Away armed timeout expired!');
 
             // prevent race conditions
-            if (!this.away) {
-                this.log('Ignoring Armed Timeout as Away is false!');
+            if (target !== TARGET_AWAY_ARM) {
+                this.log('Ignoring Away Armed Timeout as target is not TARGET_AWAY_ARM!');
             }
             else {
-                this.armed = true;
-                this.armedService.getCharacteristic(Characteristic.ContactSensorState).updateValue(1);
+                this.current = CURRENT_AWAY_ARMED;
+                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_AWAY_ARMED));
             }
-        }).bind(this), this.armDelay * 1000);
+        }).bind(this), this.awayArmDelay * 1000);
 
         // Do this to not prevent homebridge shutdown
-        this.armedTimeout.unref();
-        this.log('Armed timeout set...');
+        this.awayArmedTimeout.unref();
+        this.log('Away armed timeout set...');
+    }
+    else if (target === TARGET_HOME_ARM) {
+        this.current = CURRENT_HOME_ARMED;
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_HOME_ARMED));
+    }
+    else if (target === TARGET_NIGHT_ARM) {
+        this.current = CURRENT_NIGHT_ARMED;
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_NIGHT_ARMED));
     }
     else {
-
         // Clear any timeouts
-        if (this.armedTimeout) {
-            clearTimeout(this.armedTimeout);
-            this.log('Home: armed timeout cleared...');
+
+        if (this.awayArmedTimeout) {
+            clearTimeout(this.awayArmedTimeout);
+            this.log('Disarm: away armed timeout cleared...');
         }
 
-        // Clear any timeouts
         if (this.alarmingTimeout) {
             clearTimeout(this.alarmingTimeout);
-            this.log('Home: alarming timeout cleared...');
+            this.log('Disarm: alarming timeout cleared...');
         }
 
-        // Clear armed, triggered and alarming states
+        // Clear armed, triggered and arming states
 
-        this.armed = false;
+        this.target = TARGET_DISARM;
+        this.current = CURRENT_DISARMED;
         this.tripped = false;
-        this.alarming = false;
+        this.arming = false;
 
-        this.armedService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
-        this.alarmingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
+        this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_DISARMED));
+        this.armingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(0);
         this.trippedService.getCharacteristic(Characteristic.On).updateValue(false);
     }
 
     // save state
-    this.away = away;
+    this.target = target;
 
     callback();
 };
@@ -376,8 +458,8 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
 
     if (tripped) {
 
-        if (!this.armed) {
-            this.log('State is not armed, ignoring request to set tripped to true...');
+        if ((this.current === CURRENT_DISARMED) || (this.current === CURRENT_ALARM_TRIGGERED)) {
+            this.log('State is CURRENT_DISARMED or CURRENT_ALARM_TRIGGERED, ignoring request to set tripped to true...');
             callback();
             this.rejectTripped(this.tripped);
             return;
@@ -388,18 +470,20 @@ AlarmPanelAccessory.prototype.setTripped = function(tripped, callback, context) 
             this.log('Alarming timeout expired!');
 
             // prevent race conditions - not sure if needed but feels safer
-            if (!this.away) {
-                this.log('Ignoring Alarming Timeout as Away is false!');
+            if (this.current === CURRENT_DISARMED) {
+                this.log('Ignoring Alarming Timeout as state is CURRENT_DISARMED!');
             }
-            else if (!this.armed) {
-                this.log('Ignoring Alarming Timeout as Armed is false!');
+            else if (this.current === CURRENT_ALARM_TRIGGERED) {
+                this.log('Ignoring Alarming Timeout as state is CURRENT_ALARM_TRIGGERED!');
             }
             else if (!this.tripped) {
                 this.log('Ignoring Alarming Timeout as Tripped is false!');
             }
             else {
-                this.alarming = true;
-                this.alarmingService.getCharacteristic(Characteristic.ContactSensorState).updateValue(1);
+                this.tripped = false;
+                this.current = CURRENT_ALARM_TRIGGERED;
+                this.trippedService.getCharacteristic(Characteristic.On).updateValue(false);
+                this.securitySystemService.getCharacteristic(Characteristic.SecuritySystemCurrentState).updateValue(getHomekitCurrentStateFromLocalCurrentState(CURRENT_ALARM_TRIGGERED));
             }
         }).bind(this), this.alarmDelay * 1000);
 
@@ -431,10 +515,9 @@ AlarmPanelAccessory.prototype.getServices = function() {
 
     return [
         this.accessoryInformationService,
-        this.awayService,
-        this.armedService,
+        this.securitySystemService,
         this.trippedService,
-        this.alarmingService
+        this.armingService
     ];
 };
 

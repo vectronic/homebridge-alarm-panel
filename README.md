@@ -5,19 +5,29 @@
 
 Provides a web UI alarm panel to view and manage a HomeKit based alarm system.
 
-Used on a spare mobile device which has been positioned near an entrance door, it can act as a secure 
+When used on a spare mobile device which has been positioned near an entrance door, it can act as a secure 
 (fingerprint or passcode protected) alarm control panel.
 
 The web UI provides:
  
-* home/away mode control
-* arming, armed, tripped and alerting states with visual and optional audible(*) indication 
+* mode control:
+    * *Disarm*
+    * *Home Arm*   
+    * *Night Arm*
+    * *Away Arm*
+* visual and optional audible(*) state indication:
+    * *Arming*
+    * *Home Armed*
+    * *Night Armed*
+    * *Away Armed*
+    * *Tripped*
+    * *Alarming*
 
 State indication is also supported via optional webhook support (see Sonos Integration below).
  
 You can use other HomeKit/Homebridge accessories and HomeKit automation to:
 
-* set the tripped state when any door or window is opened (e.g. via an entry detection accessory) if the alarm is armed.
+* set the tripped state when any door or window is opened (e.g. via an entry contact sensor accessory) if the alarm is armed.
 * enable a siren or send an alert (e.g. via an SMS notification accessory such as 
 [homebridge-twilio-sms](https://www.npmjs.com/package/homebridge-twilio-sms)) when in the alarming state. 
 
@@ -47,7 +57,7 @@ Example `config.json` entry:
     "arming_tone_webhook_url": "http://127.0.0.1:5005/clipall/arming.mp3/50",
     "tripped_tone_webhook_url": "http://127.0.0.1:5005/clipall/tripped.mp3/50",
     "alarming_tone_webhook_url": "http://127.0.0.1:5005/clipall/alarming.mp3/50",
-    "arm_delay": 30,
+    "away_arm_delay": 30,
     "alarm_delay": 30,
     "arming_tone_interval": 3,
     "tripped_tone_interval": 2,
@@ -64,9 +74,9 @@ Where:
 * `web_ui_poll_interval` is the interval in seconds between requests from the web UI to Homebridge to get the current state.
 Defaults to 2 seconds.
 * `web_ui_debug` if `true` logs out information on the web UI for debugging, defaults to `false`.
-* `arm_delay` is the delay in seconds after the *Away Arm* mode is set `on` before the *Away Armed* mode is automatically set `on`. 
+* `away_arm_delay` is the delay in seconds after the target *Away Arm*mode is set `on` before the corresponding target state is automatically set `on`. 
 Defaults to 30 seconds.
-* `alarm_delay` is the delay in seconds after the *Tripped* state is set `on` before the *Alarming* state is automatically set `on`. 
+* `alarm_delay` is the delay in seconds after the *Tripped* state is set `on` before the *Alarm Triggered* state is automatically set `on`. 
 Defaults to 30 seconds.
 * `web_ui_arming_tone_mp3_url` is a relative or absolute HTTP URL to an MP3 audio file to be used for the arming tone in the web UI. 
 By default this has no value and is therefore disabled.
@@ -79,9 +89,9 @@ By default this has no value and is therefore disabled.
 A usable MP3 is available at the internally hosted relative URL of `assets/audio/alarming.mp3`
 * `arming_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below). 
 By default this has no value and is therefore disabled.
-* `tripped_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below).
+* `tripped_tone_webhook_url` is an HTTP URL to request a tripped clip playback via a webhook (see Sonos Integration below).
 By default this has no value and is therefore disabled.
-* `alarming_tone_webhook_url` is an HTTP URL to request an arming clip playback via a webhook (see Sonos Integration below). 
+* `alarming_tone_webhook_url` is an HTTP URL to request an alarming clip playback via a webhook (see Sonos Integration below). 
 By default this has no value and is therefore disabled.
 * `arming_tone_interval` is the interval in seconds between repeated playback of the arming tone in the web UI and/or via the webhook. 
 Defaults to 3 seconds.
@@ -90,26 +100,57 @@ Defaults to 1 seconds.
 * `alarming_tone_interval` is the interval in seconds between repeated playback of the alarming tone in the web UI and/or via the webhook. 
 Defaults to 1 seconds.
 
-If both `https_key_path` and `https_cert_path` are configured to point at HTTPS key and cert files available on the Homebridge
-server the web UI will be hosted on HTTPS.
+The web UI will be hosted on HTTPS if both `https_key_path` and `https_cert_path` are configured to point at HTTPS key 
+and cert files available on the Homebridge server's local filesystem.
 
-### Integration
+### Accessory Services and Integration
 
-The platform provides one accessory with the following switch services:
+#### Security System
 
-* *Away*: This can be manually turned on/off via the Home app or the alarm control panel web UI as you enter or leave the home.
-* *Tripped*: HomeKit automation should be configured to turn this on when entry is detected 
-(e.g. via an entry detection accessory). Note that the accessory logic ensures that setting the on state 
-ONLY takes effect if the *Armed* switch is on. The state can be set manually on (but not off) via the Home app, 
+The accessory provides a standard HomeKit Security System service. The target state (*Disarmed*, *Home Arm*, *Night Arm*, *Away Arm*)
+can be manually set from the Home app or the web UI. 
+
+You can also use a HomeKit automation rule to set the target state to *Away Arm* when the last person leaves the house.
+
+In the case of setting the target state to *Away Arm*, there will be a delay of `away_arm_delay` seconds before the current state
+changes to *Away Armed*. In all other state changes the current state will update to the target state immediately.
+
+A HomeKit automation rule should be configured to sound an alarm/send a notification etc. when the current state becomes
+*Alarm Triggered* and to stop the alarm/send a notification when the current state becomes *Disarmed*.
+
+A webhook (`alarming_tone_webhook_url`) is also provided for current state of *Alarm Triggered* (see Sonos Integration below).
+
+#### Arming Sensor
+
+The accessory provides a standard HomeKit contact sensor service called *Arming*. 
+
+When the Security System's target state is set to *Away Arm* and before the current state changes to *Away Armed* (i.e. during
+the `away_arm_delay` interval), the sensor will be set `on`. Once the `away_arm_delay` interval completes, the sensor will be set to `off`.
+
+HomeKit automation can be configured to send a notification etc. when this is set `on`. 
+
+A webhook (`arming_tone_webhook_url`) is also provided for this state (see Sonos Integration below).
+
+#### Tripped Switch
+
+The accessory provides a standard HomeKit switch service called *Tripped*. HomeKit automation should be configured to 
+turn this `on` when entry is detected (e.g. via door/window contact accessories or movement sensors). 
+
+Note that you can configure conditional rules so that *Tripped* is set `on` only for certain accessories based on the 
+state of *Away Armed*, *Home Armed*, *Night Armed* (e.g. don't set tripped on upper level windows when armed for night.)
+
+Note that the accessory logic ensures that setting *Tripped* to `on` only takes effect if the Security System 
+current state is *Away Armed*, *Home Armed*, *Night Armed*. 
+
+Note that the *Tripped* state can be set manually `on` (but not `off`) via the Home app,
 however this is not the intended usage (apart from testing). 
 
-and contact services:
+When the *Tripped* state is set to `on`, after `alarm_delay` seconds, the current state of the Security System will be 
+automatically set to *Alarm Triggered*. Once the *Alarm Triggered* state is set, the *Tripped* state will return to `off`.
 
-* *Armed*: This is automatically managed by the plugin: It is turned on after `arm_delay` seconds subsequent to the *Away* 
-switch being turned on and it is immediately turned off when the *Away* switch is turned off.
-* *Alarming*: This is automatically managed by the plugin: It is turned on after `alarm_delay` seconds subsequent to the *Tripped* 
-switch being turned on and it is immediately turned off when the *Away* switch is turned off. HomeKit automation should be
-configured so that an alert is sent (e.g. via an SMS notification accessory) when this is turned on.
+HomeKit automation can be configured to send a notification etc. when *Tripped* is set `on`. 
+
+While the *Tripped* state is `on` an audible alert will occur if `web_ui_tripped_tone_mp3_url`  or `tripped_tone_webhook_url` are configured.
 
 #### Sonos Integration
 
@@ -122,36 +163,51 @@ Once started, it should be possible to test the URLs to play these clips using `
 
     curl 'http://127.0.0.1:5005/reception/clip/alarming.mp3/80'
 
-Once this is working, simply configure the following properties in the Homebridge `config.json` for the AlarmPanel platform:
+Once this is working, configure the following properties in the Homebridge `config.json` for the AlarmPanel platform:
 
 * `arming_tone_webhook_url`
 * `tripped_tone_webhook_url`
 * `alarming_tone_webhook_url` 
 
-### Usage
+### General Usage
  
-1. Open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
-1. Tap on the "Connect" button (this is required to provide permission to the browser for programmatic control of the web audio playback).
-1. Tap on the "Home/Away" toggle button as you enter or leave the house.
+Firstly, open the following URL in your mobile browser: [http://yourHomebridgeServerIp:web_ui_port](http://yourHomebridgeServerIp:web_ui_port)
+and tap on the "Connect" button in the web UI (this is required to provide permission to the browser for programmatic control of the web audio playback).
 
-When the Home/Away button is toggled to away, the *Away* switch will be turned `on`. An audible alert will occur
-(if `web_ui_arming_tone_mp3_url` or `arming_tone_webhook_url` are configured)
-for the `arm_delay` time after which point the *Armed* switch will be turned `on` and the audible alert will stop.
+In daily use of the web UI, tap on:
 
-If the *Tripped* switch is turned `on`, an audible alert will occur 
-(if `web_ui_tripped_tone_mp3_url` or `tripped_tone_webhook_url` are configured)
-until either:
+* the *Away Arm* button as you leave the house.
+* the *Home Arm* or *Night Arm* button as you go upstairs/to sleep etc.
+* the *Disarm* button as you enter the house/wakeup etc.
 
-* the Home/Away button is toggled to home causing the *Away* switch to be turned `off`.
-* the `alarm_delay` period expires causing the *Alarming* switch to be turned `on`.
+When the *Away Arm*/*Home Arm*/*Night Arm* button are tapped, the Security System target state will be set accordingly:
 
-If the *Alarming* switch is turned `on`, an audible alert will occur 
-(if `web_ui_alarming_tone_mp3_url` or `alarming_tone_webhook_url` are configured)
-until:
+* If setting *Away Arm*, the *Arming* sensor will be set `on`. An audible alert will occur if `web_ui_arming_tone_mp3_url` or 
+`arming_tone_webhook_url` are configured. After the `away_arm_delay` time, the Security System current state will be set accordingly 
+and the *Arming* sensor will be set `off`.
+* If setting *Home Arm*/*Night Arm* the Security System current state will be set accordingly immediately.
 
-* the Home/Away button is toggled to home causing the *Away* switch to be turned `off`.
+Whenever the *Tripped* switch is turned `on` while the Security System current state is *Away Arm*/*Home Arm*/*Night Arm* 
+ an audible alert will occur if `web_ui_tripped_tone_mp3_url` 
+or `tripped_tone_webhook_url` are configured. 
 
-NOTE: If Homebridge is restarted the alarm panel state will reset.
+The *Tripped* state will remain on until:
+
+* the Security System target state is set to *Disarm* on the Home App
+* the *Disarm* button on the web UI is tapped, which causes the Security System target state to be set to *Disarm*
+* the `alarm_delay` period expires causing the Security System current state to be set to *Alarm Triggered*.
+
+If the Security System current state is set to *Alarm Triggered* an audible alert will occur if `web_ui_tripped_tone_mp3_url` 
+or `tripped_tone_webhook_url` are configured.
+
+The *Alarm Triggered* state will remain on until:
+
+* the Security System target state is set to *Disarm* on the Home App
+* the *Disarm* button on the web UI is tapped, which causes the Security System target state to be set to *Disarm*
+
+NOTE: If Homebridge is restarted the state will be reset to *Disarmed*.
+
+![Web UI](images/web_ui.png "Web UI"")
 
 ### HTTP REST API Details
 
@@ -159,17 +215,17 @@ NOTE: This section provides details of the internal design. Knowledge of this is
 
 The plugin provides a simple HTTP REST API which is used by the web UI.
 
-The current state of each switch can be queried by performing the following GET request:
+The current state of the accessory can be queried by performing the following GET request:
 
 `http://yourHomebridgeServerIp:web_ui_port/api/state`
 
 This will return a response with content type `application/json` with the body content in the form:
 
     {
-        "away": <true|false>,
-        "armed": <true|false>,
-        "tripped": <true|false>,
-        "alarming": <true|false>
+        "currentState": "<AWAY_ARMED|HOME_ARMED|NIGHT_ARMED|DISARMED|ALARM_TRIGGERED>",
+        "targetState": "<AWAY_ARM|HOME_ARM|NIGHT_ARM|DISARM>",
+        "arming": <true|false>,
+        "tripped": <true|false>
     }
 
 The state can be updated by performing the following POST request:
@@ -179,16 +235,16 @@ The state can be updated by performing the following POST request:
 with the body content in the form (only the *away* switch state can be managed):
 
     {
-        "away": <true|false>
+        "targetState": "<AWAY_ARM|HOME_ARM|NIGHT_ARM|DISARM>"
     }
     
 This will return a response with content type `application/json` with the body content in the form:
 
     {
-        "away": <true|false>,
-        "armed": <true|false>,
-        "tripped": <true|false>,
-        "alarming": <true|false>
+        "currentState": "<AWAY_ARMED|HOME_ARMED|NIGHT_ARMED|DISARMED|ALARM_TRIGGERED>",
+        "targetState": "<AWAY_ARM|HOME_ARM|NIGHT_ARM|DISARM>",
+        "arming": <true|false>,
+        "tripped": <true|false>
     }
 
 The web UI specific config can be obtained by performing the following GET request:

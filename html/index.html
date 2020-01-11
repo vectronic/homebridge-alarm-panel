@@ -33,7 +33,7 @@
         <meta name="msapplication-TileImage" content="assets/favicon/ms-icon-144x144.png">
     </head>
     <body>
-        <div id="labelContainer" class="d-flex justify-content-center fixed-top">
+    <div id="labelContainer" class="d-flex justify-content-center fixed-top">
             <span id="armingLabel" class="badge badge-pill badge-info d-none">Arming</span>
             <span id="armedLabel" class="badge badge-pill badge-info d-none">Armed</span>
             <span id="trippedLabel" class="badge badge-pill badge-warning d-none">Tripped</span>
@@ -42,8 +42,10 @@
         <div class="d-flex">
             <div id="logText" class="overflow-auto vh-100 w-50"></div>
             <button id="connectButton" type="button" class="btn btn-success vh-100 w-100 d-none">Connect</button>
-            <button id="homeButton" disabled type="button" class="btn btn-secondary vh-100 w-100 d-none">Home</button>
-            <button id="awayButton" disabled type="button" class="btn btn-primary vh-100 w-100 d-none">Away</button>
+            <button id="disarmButton" disabled type="button" class="btn btn-secondary vh-100 w-100 d-none">Disarm</button>
+            <button id="awayArmButton" disabled type="button" class="btn btn-warning vh-50 w-100 d-none">Away Arm</button>
+            <button id="homeArmButton" disabled type="button" class="btn btn-primary vh-25 w-100 d-none">Home Arm</button>
+            <button id="nightArmButton" disabled type="button" class="btn btn-info vh-25 w-100 d-none">Night Arm</button>
         </div>
 
         <audio id="armingTone" src="assets/audio/arming.mp3"></audio>
@@ -55,6 +57,16 @@
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
         <script>
+            const TARGET_AWAY_ARM = "TARGET_AWAY_ARM";
+            const TARGET_HOME_ARM = "TARGET_HOME_ARM";
+            const TARGET_NIGHT_ARM = "TARGET_NIGHT_ARM";
+            const TARGET_DISARM = "TARGET_DISARM";
+
+            const CURRENT_AWAY_ARMED = "CURRENT_AWAY_ARMED";
+            const CURRENT_HOME_ARMED = "CURRENT_HOME_ARMED";
+            const CURRENT_NIGHT_ARMED = "CURRENT_NIGHT_ARMED";
+            const CURRENT_DISARMED = "CURRENT_DISARMED";
+            const CURRENT_ALARM_TRIGGERED = "CURRENT_ALARM_TRIGGERED";
 
             const stateUrl = 'api/state';
             const configUrl = 'api/config';
@@ -69,8 +81,10 @@
             const logText = document.getElementById('logText');
 
             const connectButton = document.getElementById('connectButton');
-            const homeButton = document.getElementById('homeButton');
-            const awayButton = document.getElementById('awayButton');
+            const disarmButton = document.getElementById('disarmButton');
+            const awayArmButton = document.getElementById('awayArmButton');
+            const homeArmButton = document.getElementById('homeArmButton');
+            const nightArmButton = document.getElementById('nightArmButton');
 
             const armingTone = document.getElementById('armingTone');
             const trippedTone = document.getElementById('trippedTone');
@@ -93,14 +107,13 @@
             let alarmingToneTimeout = null;
 
             let state = {
-                away: false,
-                armed: false,
-                tripped: false,
-                alarming: false
+                currentState: CURRENT_DISARMED,
+                targetState: TARGET_DISARM,
+                arming: false,
+                tripped: false
             };
 
             let remoteUpdateInProgress = false;
-
 
             // Add a log message to ui
             function log(message, error) {
@@ -120,9 +133,9 @@
 
             // Each time arming tone ends playing, check if we should reschedule to play again based on current state
             armingTone.onended = () => {
-                if (state.away && !state.armed) {
+                if (state.arming) {
                     armingToneTimeout = setTimeout(() => {
-                        if (state.away && !state.armed) {
+                        if (state.arming) {
                             armingTone.play();
                         }
                         else {
@@ -138,9 +151,9 @@
 
             // Each time tripped tone ends playing, check if we should reschedule to play again based on current state
             trippedTone.onended = () => {
-                if (state.tripped && !state.alarming) {
+                if (state.tripped) {
                     trippedToneTimeout = setTimeout(() => {
-                        if (state.tripped && !state.alarming) {
+                        if (state.tripped) {
                             trippedTone.play();
                         }
                         else {
@@ -156,9 +169,9 @@
 
             // Each time alarming tone ends playing, check if we should reschedule to play again based on current state
             alarmingTone.onended = () => {
-                if (state.alarming) {
+                if (state.currentState === CURRENT_ALARM_TRIGGERED) {
                     alarmingToneTimeout = setTimeout(() => {
-                        if (state.alarming) {
+                        if (state.currentState === CURRENT_ALARM_TRIGGERED) {
                             alarmingTone.play();
                         }
                         else {
@@ -217,11 +230,11 @@
             }
 
 
-            // update remote state after local state changed by input
-            function setRemoteAwayState(localAway) {
+            // update remote target state after local target state changed by input
+            function setRemoteTargetState(newTargetState) {
 
                 const body = {
-                    away: localAway
+                    targetState: newTargetState
                 };
 
                 return makeRequest('POST', stateUrl, JSON.stringify(body)).then((response) => {
@@ -264,22 +277,36 @@
             // Render the server state locally
             function renderLocalState() {
                 log(`renderLocalState(): ${JSON.stringify(state)}`);
-                if (state.away) {
-                    homeButton.classList.add('d-none');
-                    homeButton.disabled = true;
-                    awayButton.classList.remove('d-none');
-                    awayButton.disabled = false;
+                if ((state.currentState === CURRENT_HOME_ARMED) || (state.currentState === CURRENT_NIGHT_ARMED) || (state.currentState === CURRENT_AWAY_ARMED) || state.arming) {
+                    // enable disarm button and show state labels
+                    disarmButton.classList.remove('d-none');
+                    disarmButton.disabled = false;
                     labelContainer.classList.remove('d-none');
+
+                    // disable arm buttons
+                    awayArmButton.classList.add('d-none');
+                    awayArmButton.disabled = true;
+                    homeArmButton.classList.add('d-none');
+                    homeArmButton.disabled = true;
+                    nightArmButton.classList.add('d-none');
+                    nightArmButton.disabled = true;
                 }
                 else {
-                    homeButton.classList.remove('d-none');
-                    homeButton.disabled = false;
-                    awayButton.classList.add('d-none');
-                    awayButton.disabled = true;
+                    // disable disarm button and hide state labels
+                    disarmButton.classList.add('d-none');
+                    disarmButton.disabled = true;
                     labelContainer.classList.add('d-none');
+
+                    // show arm buttons
+                    awayArmButton.classList.remove('d-none');
+                    awayArmButton.disabled = false;
+                    homeArmButton.classList.remove('d-none');
+                    homeArmButton.disabled = false;
+                    nightArmButton.classList.remove('d-none');
+                    nightArmButton.disabled = false;
                 }
 
-                if (state.away && !state.armed) {
+                if (state.arming) {
                     armingLabel.classList.remove('d-none');
                     startArmingTone();
                 }
@@ -287,14 +314,7 @@
                     armingLabel.classList.add('d-none');
                 }
 
-                if (state.armed && !state.tripped && !state.alarming) {
-                    armedLabel.classList.remove('d-none');
-                }
-                else {
-                    armedLabel.classList.add('d-none');
-                }
-
-                if (state.tripped && !state.alarming) {
+                if (state.tripped) {
                     trippedLabel.classList.remove('d-none');
                     startTrippedTone();
                 }
@@ -302,7 +322,14 @@
                     trippedLabel.classList.add('d-none');
                 }
 
-                if (state.alarming) {
+                if ((state.currentState === CURRENT_NIGHT_ARMED) || (state.currentState === CURRENT_HOME_ARMED) || (state.currentState === CURRENT_AWAY_ARMED)) {
+                    armedLabel.classList.remove('d-none');
+                }
+                else {
+                    armedLabel.classList.add('d-none');
+                }
+
+                if (state.currentState === CURRENT_ALARM_TRIGGERED) {
                     alarmingLabel.classList.remove('d-none');
                     startAlarmingTone();
                 }
@@ -342,31 +369,34 @@
             }
 
 
-            // Respond to local manual state change
-            function handleLocalChange(localAway) {
+            // Respond to local manual target state change
+            function handleLocalChange(newTargetState) {
 
-                log(`local away: ${localAway}`);
+                log(`new target state: ${newTargetState}`);
 
-                if (localAway !== state.away) {
+                if (newTargetState !== state.targetState) {
 
                     // Disable handling of remote state polling
                     remoteUpdateInProgress = true;
 
-                    // Push the local away change to remote
-                    setRemoteAwayState(localAway);
+                    // Push the local target state change to remote
+                    setRemoteTargetState(newTargetState);
                 }
             }
 
 
-            // Handle local manual away/home change
-            awayButton.onclick = () => {
-                handleLocalChange(false);
+            // Handle local manual target state change
+            disarmButton.onclick = () => {
+                handleLocalChange(TARGET_DISARM);
             };
-
-
-            // Handle local manual away/home change
-            homeButton.onclick = () => {
-                handleLocalChange(true);
+            awayArmButton.onclick = () => {
+                handleLocalChange(TARGET_AWAY_ARM);
+            };
+            homeArmButton.onclick = () => {
+                handleLocalChange(TARGET_HOME_ARM);
+            };
+            nightArmButton.onclick = () => {
+                handleLocalChange(TARGET_NIGHT_ARM);
             };
 
 
