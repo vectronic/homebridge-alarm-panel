@@ -207,9 +207,9 @@ The *Alarm Triggered* state will remain on until:
 
 NOTE: If Homebridge is restarted the state will be reset to *Disarmed*.
 
-![Web UI Example 2](images/web_ui_1.png "Web UI Example 1"")
+![Web UI Example 2](images/web_ui_1.png "Web UI Example 1")
 
-![Web UI Example 2](images/web_ui_2.png "Web UI Example 2"")
+![Web UI Example 2](images/web_ui_2.png "Web UI Example 2")
 
 ### HTTP REST API Details
 
