@@ -271,7 +271,7 @@ AlarmPanelAccessory.prototype.startArmingToneStateTimeout = function() {
             const that = this;
             request(this.arming_tone_webhook_url, function (error) {
                 if (error) {
-                    this.log(`armingToneTimeout: ${error}`)
+                    that.log(`armingToneTimeout: ${error}`)
                 }
                 that.startArmingToneStateTimeout();
             });
@@ -293,7 +293,7 @@ AlarmPanelAccessory.prototype.startTrippedToneStateTimeout = function() {
             const that = this;
             request(this.tripped_tone_webhook_url, function (error) {
                 if (error) {
-                    this.log(`trippedToneTimeout: ${error}`)
+                    that.log(`trippedToneTimeout: ${error}`)
                 }
                 that.startTrippedToneStateTimeout();
             });
@@ -315,7 +315,7 @@ AlarmPanelAccessory.prototype.startAlarmingToneStateTimeout = function() {
             const that = this;
             request(this.alarming_tone_webhook_url, function (error) {
                 if (error) {
-                    this.log(`alarmingToneTimeout: ${error}`)
+                    that.log(`alarmingToneTimeout: ${error}`)
                 }
                 that.startAlarmingToneStateTimeout();
             });
