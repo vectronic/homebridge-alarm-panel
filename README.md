@@ -1,6 +1,8 @@
 # homebridge-alarm-panel
-> A [Homebridge](https://github.com/nfarina/homebridge) plugin providing an alarm system with a web UI. 
+> A [Homebridge](https://github.com/nfarina/homebridge) plugin providing an alarm system with a web UI.
 
+**NOTE**: This is no longer actively developed as I have been required by my insurer to move to a "certified" solution (which costs a lot more and does the same thing).
+ 
 ### Aim
 
 Provides a web UI alarm panel to view and manage a HomeKit based alarm system.
